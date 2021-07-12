@@ -1,0 +1,11 @@
+/target
+/.classpath
+/.settings
+/.project
+/network.xml
+/network_geometry.txt
+/dependency-reduced-pom.xml
+/logs
+/bin
+/doc
+/docs

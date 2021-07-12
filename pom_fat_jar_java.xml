@@ -1,0 +1,223 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+    <groupId>org.planit.parentpom</groupId>
+    <artifactId>PLANitParentPom</artifactId>
+		<version>0.2.1a1</version>
+	</parent>
+
+	<groupId>org.planit.aurin.matsim</groupId>
+	<artifactId>PLANitAurinMatsim</artifactId>
+	<description>Generate MATSimWrapper fat jar. Gathers all dependencies and packages them in one jar
+	 This can be used for using the wrapper in a stand alone fashion without any access to sources of project builds
+  </description>
+	<packaging>jar</packaging>
+
+	<name>PLANitAurinMatsim</name>
+	<url>http://maven.apache.org</url>
+
+	<dependencies>
+	
+	  <!-- version same as parent pom -->
+    <dependency>
+      <groupId>org.planit.aurin.parser</groupId>
+      <artifactId>PLANitParserWrapper</artifactId>
+      <version>0.2.1a1</version>
+    </dependency>   
+
+		<!-- version inherited from parent -->
+		<dependency>
+			<groupId>org.planit.utils</groupId>
+			<artifactId>PLANitUtils</artifactId>
+		</dependency>		 
+		
+    <!-- version inherited from parent -->
+    <dependency>
+      <groupId>org.planit</groupId>
+      <artifactId>PLANit</artifactId>
+    </dependency>		
+
+	</dependencies>
+
+	<build>
+
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+		</resources>
+
+		<plugins>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<!-- inherit from parent plugin management configuration -->
+					<execution>
+						<id>copy-resources</id>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<!-- no need for class path since dependencies are all included in shaded jar -->
+							<addClasspath>false</addClasspath>
+							<mainClass>org.planit.aurin.parser.PlanitAurinMatsimMain</mainClass>
+						</manifest>
+						<manifestEntries>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>3.2.0</version>
+				<executions>
+					<execution>
+						<id>javadoc-jar</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<configuration>
+						  <!--  place generated javadocs in /docs directory of root-->
+		          <reportOutputDirectory>${basedir}</reportOutputDirectory>
+		          <destDir>docs</destDir>						
+							<!-- switch on dependency-driven aggregation -->
+							<includeDependencySources>true</includeDependencySources>
+              <dependencySourceIncludes>
+                <!-- ONLY include the (non-generated) PLANit dependencies in the JavaDoc-->
+                <dependencySourceInclude>org.planit.utils:*</dependencySourceInclude>
+                <dependencySourceInclude>org.planit:*</dependencySourceInclude>                
+              </dependencySourceIncludes>			
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>				
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>${maven.shade.plugin.version}</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<minimizeJar>true</minimizeJar>
+							<filters>
+								<filter>
+									<artifact>org.planit.utils:PLANitUtils</artifact>
+									<includes>
+										<include>**</include>
+									</includes>
+								</filter>				
+                <filter>
+                  <artifact>org.planit:PLANit</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>																																		
+								<!-- INCLUDE components that are invoked via reflection explicitly 
+									so that they are not excluded by the minimisation of the jar -->
+								<filter>
+									<artifact>org.glassfish.jaxb:jaxb-runtime</artifact>
+									<includes>
+										<include>**</include>
+									</includes>
+								</filter>
+								<filter>
+									<artifact>javax.xml.bind:jaxb-api</artifact>
+									<includes>
+										<include>**</include>
+									</includes>
+								</filter>
+								<filter>
+									<artifact>org.glassfish.jaxb:jaxb-runtime</artifact>
+									<includes>
+										<include>**</include>
+									</includes>
+								</filter>
+								<!-- EXCLUDE javax.media as it is not used in run-time application 
+									environment -->
+								<filter>
+									<artifact>javax.media:*</artifact>
+									<excludes>
+										<exclude>**</exclude>
+									</excludes>
+								</filter>
+								<filter>
+									<artifact>org.apache.maven:*</artifact>
+									<excludes>
+										<exclude>**</exclude>
+									</excludes>
+								</filter>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<!-- should not be in final jar -->
+										<exclude>.gitkeep</exclude>
+										<!-- remove Eclipse development information from the final jar -->
+										<exclude>development/**</exclude>
+										<!-- EXCLUDE Module-info.classes to avoid warnings on breaking 
+											encapsultation -->
+										<exclude>module-info.class</exclude>
+										<!-- EXCLUDE third party manifest information that is not needed 
+											or otherwise accounted for already -->
+										<exclude>**/MANIFEST.MF</exclude>
+										<exclude>META-INF/DEPENDENCIES</exclude>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+										<!-- exclude episode metadata generated by jaxb, it is not required -->
+										<exclude>META-INF/*.episode</exclude>
+										<!-- exclude jdom license it is already included otherwise -->
+										<exclude>META-INF/jdom-info.xml</exclude>
+										<!-- related to openjump a gis visualisation tool, it contained 
+											reference to vividsolutinos JTS but it appears to not be used so remove from 
+											jar -->
+										<exclude>jump-workbench-properties.xml</exclude>
+										<exclude>Doxyfile</exclude>
+										<!-- EXCLUDE djutils license information that is already otherwise added -->
+										<exclude>LICENSE.txt</exclude>
+										<exclude>license.html</exclude>
+									</excludes>
+								</filter>
+							</filters>
+							<transformers>
+								<!-- deal with apache licenses from multiple jars/packages appropriately -->
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer" />
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+									<addHeader>false</addHeader>
+								</transformer>
+								<!-- merge meta information of third party jars using plexus components 
+									and configurations -->
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
+								<!-- merge meta information of maven plugins using plugin.xml -->
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.PluginXmlResourceTransformer" />
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+								</transformer>
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+		</plugins>
+	</build>
+
+</project>
