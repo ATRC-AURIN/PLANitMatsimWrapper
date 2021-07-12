@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 
 import org.matsim.core.config.Config;
 import org.planit.utils.exceptions.PlanItException;
+import org.planit.utils.misc.StringUtils;
 
 /**
  * Helper methods to configure the AURIN MATSim wrapper based on user arguments provided for this wrapper.
@@ -45,6 +46,9 @@ public class PlanitAurinMatsimHelper {
   /** Value reflecting the need to generate an amended config file based on user command line settings and default config file*/
   public static final String TYPE_CONFIG_VALUE = "config";  
   
+  /** Value reflecting the need to conduct a MATSim simulation run*/
+  public static final String TYPE_SIMULATION_VALUE = "simulation";    
+  
   //----------------------------------------------------
   //-------- MODES -------------------------------------
   //----------------------------------------------------  
@@ -64,7 +68,29 @@ public class PlanitAurinMatsimHelper {
   
   /** Value reflecting the car and pt modes as modes, which are to be simulated 
    * TODO: NOT YET SUPPORTED */
-  public static final String MODES_CAR_PT_SIM_VALUE = "car_pt_sim";  
+  public static final String MODES_CAR_PT_SIM_VALUE = "car_pt_sim";
+  
+  //----------------------------------------------------
+  //-------- CRS -------------------------------------
+  //----------------------------------------------------  
+  
+  /** the string representation used in MATSim for the default CRS Atlantis */
+  protected static String MATSIM_DEFAULT_GLOBAL_CRS = "Atlantis";
+  
+  /** Key reflecting the CRS to use in simulation */
+  public static final String CRS_KEY = "crs";  
+  
+  //----------------------------------------------------
+  //-------- NETWORK------------------------------------
+  //----------------------------------------------------  
+  
+  /** the default network file name in MATSim*/
+  protected static String MATSIM_DEFAULT_NETWORK = "network.xml";
+  
+  /** Key reflecting the network file location */
+  public static final String NETWORK_KEY = "network";  
+  
+  
           
   /** Check if the chosen type relates to generation a configuration file or not
    * 
@@ -82,6 +108,21 @@ public class PlanitAurinMatsimHelper {
         return false;
     }
   }  
+  
+  /** Check if the chosen type relates to running a MATSim simulation
+   * 
+   * @param keyValueMap to check
+   * @return true when 
+   */
+  public static boolean isSimulationType(final Map<String, String> keyValueMap) {
+    String type = keyValueMap.get(TYPE_KEY);
+    switch (type) {
+      case TYPE_SIMULATION_VALUE:
+        return true;
+      default:
+        return false;
+    }
+  }   
    
 
   /** The output directory to use. If not configure the default is provided which is the working directory of the application
@@ -107,27 +148,75 @@ public class PlanitAurinMatsimHelper {
    * @param keyValueMap to extract configuration choice from
    */
   public static void configureModes(final Config config, final Map<String, String> keyValueMap) {
-    String type = keyValueMap.get(MODES_KEY);
-    switch (type) {
+    String modesValue = keyValueMap.get(MODES_KEY);
+    switch (modesValue) {
       case MODES_CAR_SIM_VALUE:
         config.changeMode().setModes(new String[] {MATSIM_CAR_MODE});
         break;
       case MODES_CAR_SIM_PT_TELEPORT_VALUE:
-        LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", type));
+        LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", modesValue));
         break;        
       case MODES_CAR_PT_SIM_VALUE:
-        LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", type));
+        LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", modesValue));
         break;                
       default:
-        LOGGER.warning(String.format("Unknown value %s for --modes argument, ignored", type));
+        LOGGER.warning(String.format("Unknown value %s for --modes argument, ignored", modesValue));
     }        
   }
-
-
-  public static void configureNetwork(final Config config, final Map<String, String> keyValueMap) {
-    // TODO Auto-generated method stub
+  
+  /** Configure the CRS of the simulation. If not set we use the default MATSIM_DEFAULT_GLOBAL_CRS
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */  
+  public static void configureCrs(Config config, Map<String, String> keyValueMap) {
+    String crsValue = keyValueMap.get(CRS_KEY);
+    if(StringUtils.isNullOrBlank(crsValue)) {
+      crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
+    }
     
+    config.global().setCoordinateSystem(crsValue);
+  }  
+
+  /** Configure the location of the network. If not set we use the current working directory and default network name MATSIM_DEFAULT_NETWORK.
+   * When invalid path is provided we log a warning and ignore.
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */
+  public static void configureNetwork(final Config config, final Map<String, String> keyValueMap) {
+    
+    String networkFileLocation = keyValueMap.get(NETWORK_KEY);     
+    try {      
+      
+      Path networkFileLocationAsPath = null;      
+      if(StringUtils.isNullOrBlank(networkFileLocation)) {
+        networkFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_NETWORK).toAbsolutePath().toString();
+      }      
+      networkFileLocationAsPath = Paths.get(networkFileLocation);
+      
+      /* set network path location */
+      config.network().setInputFile(networkFileLocationAsPath.toAbsolutePath().toString());
+      
+    }catch (Exception e) {
+      LOGGER.warning(String.format("Invalid network file location %s for --network, ignored", networkFileLocation));
+    }   
   }
+  
+  /** Configure the CRS of the network. If not set we use the geo data as is without any conversion. Otherwise it is converted to the MATSim 
+   * simulation global CRS.
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */  
+  public static void configureNetworkCrs(Config config, Map<String, String> keyValueMap) {
+    String crsValue = keyValueMap.get(CRS_KEY);
+    if(StringUtils.isNullOrBlank(crsValue)) {
+      crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
+    }
+    
+    config.network().setInputCRS(crsValue);
+  }   
 
 
   public static void configureActivityConfig(final Config config, final Map<String, String> keyValueMap) {
@@ -163,6 +252,10 @@ public class PlanitAurinMatsimHelper {
   public static void configureEndTime(final Config config, final Map<String, String> keyValueMap) {
     // TODO Auto-generated method stub
     
-  }  
+  }
+
+
+
+ 
   
 }

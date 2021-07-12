@@ -38,7 +38,9 @@ import org.planit.utils.exceptions.PlanItException;
  * 
  * <ul>
  * <li>--modes    indicates the mode support, options {@code car_sim (default), car_sim_pt_teleport, car_pt_sim}</li>
- * <li>--network  CONTINUE HERE
+ * <li>--crs      indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234</li>
+ * <li>--network  path to the network file, when absent network is assumed in the cwd under "network.xml"</li>
+ * <li>--network_crs  coordinate reference system of the network file, e.g. EPSG:1234, when absent it is used as is in MATSim</li>
  * </ul> 
  * <p>
  * The {@code --modes} option defines what modes are simulated (car only, or car and pt) and how they are simulated. Currently only cars can be simulated, i.e., 
@@ -52,6 +54,7 @@ import org.planit.utils.exceptions.PlanItException;
  * </ul> 
  * 
  * We note that when the above options are used all other command line options for simulation are ignored since they custom configuration file takes precedence.
+ * 
  * @author markr
  *
  */
@@ -112,7 +115,7 @@ public class PlanitAurinMatsimMain {
           
           generateMatsimConfiguration(keyValueMap, outputDir);
           
-        }else if(PlanitAurinMatsimSimulationHelper.isSimulationType(keyValueMap)) {
+        }else if(PlanitAurinMatsimHelper.isSimulationType(keyValueMap)) {
           
           conductMatsimSimulation(keyValueMap, outputDir);
           
@@ -162,7 +165,10 @@ public class PlanitAurinMatsimMain {
       Config config = ConfigUtils.createConfig();
       
       PlanitAurinMatsimHelper.configureModes(config, keyValueMap);
+      PlanitAurinMatsimHelper.configureCrs(config,keyValueMap);
       PlanitAurinMatsimHelper.configureNetwork(config,keyValueMap);
+      PlanitAurinMatsimHelper.configureNetworkCrs(config,keyValueMap);
+      //TODO: below here
       PlanitAurinMatsimHelper.configurePlans(config,keyValueMap);
       PlanitAurinMatsimHelper.configureActivityConfig(config,keyValueMap);
       PlanitAurinMatsimHelper.configureCoordinateReferenceSystem(config,keyValueMap);
