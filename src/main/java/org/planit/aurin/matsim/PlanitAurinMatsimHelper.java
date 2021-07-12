@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.matsim.core.config.Config;
+import org.matsim.core.utils.misc.Time;
 import org.planit.utils.exceptions.PlanItException;
 import org.planit.utils.misc.StringUtils;
 
@@ -90,7 +91,42 @@ public class PlanitAurinMatsimHelper {
   /** Key reflecting the network file location */
   public static final String NETWORK_KEY = "network";  
   
+  //----------------------------------------------------
+  //-------- PLAN --------------------------------------
+  //----------------------------------------------------  
   
+  /** the default network file name in MATSim*/
+  protected static String MATSIM_DEFAULT_PLANS = "plans.xml";
+  
+  /** Key reflecting the plan file location */
+  public static final String PLANS_KEY = "plans";   
+  
+  //----------------------------------------------------
+  //-------- STARTTIME/ENDTIME -------------------------
+  //----------------------------------------------------  
+  
+  /** the string representation used in MATSim for the default qsim start time*/
+  protected static String MATSIM_DEFAULT_STARTTIME = "00:00:00";
+  
+  /** the string representation used in MATSim for the default qsim end time*/
+  protected static String MATSIM_DEFAULT_ENDTIME = MATSIM_DEFAULT_STARTTIME;  
+  
+  /** Key reflecting the start time to use in simulation */
+  public static final String STARTTIME_KEY = "starttime";    
+    
+  /** Key reflecting the end time to use in simulation */
+  public static final String ENDTIME_KEY = "endtime";     
+  
+  //----------------------------------------------------
+  //-------- ITERATIONS -------------------------------------
+  //----------------------------------------------------  
+  
+  /** the default maximum number of iterations run when not set by user */
+  protected static Integer DEFAULT_ITERATIONS_MAX = 10;
+  
+  /** Key reflecting the maximum number of iterations to run in simulation */
+  public static final String ITERATIONS_MAX_KEY = "iterations_max";    
+    
           
   /** Check if the chosen type relates to generation a configuration file or not
    * 
@@ -218,44 +254,96 @@ public class PlanitAurinMatsimHelper {
     config.network().setInputCRS(crsValue);
   }   
 
+  /** Configure the location of the activities. If not set we use the current working directory and default plans name MATSIM_DEFAULT_PLANS.
+   * When invalid path is provided we log a warning and ignore.
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */
+  public static void configurePlans(final Config config, final Map<String, String> keyValueMap) {
+    String planFileLocation = keyValueMap.get(PLANS_KEY);     
+    try {      
+      
+      Path planFileLocationAsPath = null;      
+      if(StringUtils.isNullOrBlank(planFileLocation)) {
+        planFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_PLANS).toAbsolutePath().toString();
+      }      
+      planFileLocationAsPath = Paths.get(planFileLocation);
+      
+      /* set plans path location */
+      config.plans().setInputFile(planFileLocationAsPath.toAbsolutePath().toString());
+      
+    }catch (Exception e) {
+      LOGGER.warning(String.format("Invalid plans file location %s for --plans, ignored", planFileLocation));
+    } 
+  }
+
+  /** Configure the CRS of the plans. If not set we use the geo data as is without any conversion. Otherwise it is converted to the MATSim 
+   * simulation global CRS.
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */   
+  public static void configurePlansCrs(Config config, Map<String, String> keyValueMap) {
+    String crsValue = keyValueMap.get(CRS_KEY);
+    if(StringUtils.isNullOrBlank(crsValue)) {
+      crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
+    }
+    
+    config.plans().setInputCRS(crsValue);
+  }
+
+  /** Configure the start time of the simulation. If not set we use the default MATSIM_DEFAULT_STARTTIME and all activities
+   * are considered. 
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */     
+  public static void configureStartTime(final Config config, final Map<String, String> keyValueMap) {
+    String startTimeValue = keyValueMap.get(STARTTIME_KEY);
+    if(StringUtils.isNullOrBlank(startTimeValue)) {
+      startTimeValue = MATSIM_DEFAULT_STARTTIME;
+    }
+           
+    config.qsim().setStartTime(Time.parseTime(startTimeValue));
+  }
+
+  /** Configure the end time of the simulation. If not set we use the default MATSIM_DEFAULT_ENDTIME and all activities
+   * are considered. 
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */       
+  public static void configureEndTime(final Config config, final Map<String, String> keyValueMap) {
+    String startTimeValue = keyValueMap.get(ENDTIME_KEY);
+    if(StringUtils.isNullOrBlank(startTimeValue)) {
+      startTimeValue = MATSIM_DEFAULT_ENDTIME;
+    }
+           
+    config.qsim().setStartTime(Time.parseTime(startTimeValue));  }
+
+  /** Configure the maximum number of iterations of the simulation. If not set we use the default DEFAULT_ITERATIONS_MAX.
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */     
+  public static void configureIterationsMax(final Config config, final Map<String, String> keyValueMap) {
+    String iterationsMaxValue = keyValueMap.get(ITERATIONS_MAX_KEY);
+    
+    Integer iterationsMax = null; 
+    if(StringUtils.isNullOrBlank(iterationsMaxValue)) {
+      iterationsMax = DEFAULT_ITERATIONS_MAX;
+    }else {
+      iterationsMax = Integer.parseInt(iterationsMaxValue);  
+    }
+           
+    config.controler().setLastIteration(iterationsMax);    
+  }
 
   public static void configureActivityConfig(final Config config, final Map<String, String> keyValueMap) {
     // TODO Auto-generated method stub
     
   }
 
-
-  public static void configureCoordinateReferenceSystem(final Config config, final Map<String, String> keyValueMap) {
-    // TODO Auto-generated method stub
-    
-  }
-
-
-  public static void configureMaxIterations(final Config config, final Map<String, String> keyValueMap) {
-    // TODO Auto-generated method stub
-    
-  }
-
-
-  public static void configurePlans(final Config config, final Map<String, String> keyValueMap) {
-    // TODO Auto-generated method stub
-    
-  }
-
-
-  public static void configureStartTime(final Config config, final Map<String, String> keyValueMap) {
-    // TODO Auto-generated method stub
-    
-  }
-
-
-  public static void configureEndTime(final Config config, final Map<String, String> keyValueMap) {
-    // TODO Auto-generated method stub
-    
-  }
-
-
-
- 
   
 }
