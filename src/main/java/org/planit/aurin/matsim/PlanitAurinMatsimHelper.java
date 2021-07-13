@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.matsim.core.config.Config;
+import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.utils.misc.Time;
 import org.planit.utils.exceptions.PlanItException;
 import org.planit.utils.misc.StringUtils;
@@ -125,7 +126,14 @@ public class PlanitAurinMatsimHelper {
   protected static Integer DEFAULT_ITERATIONS_MAX = 10;
   
   /** Key reflecting the maximum number of iterations to run in simulation */
-  public static final String ITERATIONS_MAX_KEY = "iterations_max";    
+  public static final String ITERATIONS_MAX_KEY = "iterations_max";  
+  
+  //----------------------------------------------------
+  //-------- ACTIVITY CONFIG --------------------------
+  //----------------------------------------------------  
+    
+  /** Key reflecting the plan file location */
+  public static final String ACTIVITY_CONFIG_KEY = "activity_config";    
     
           
   /** Check if the chosen type relates to generation a configuration file or not
@@ -340,9 +348,28 @@ public class PlanitAurinMatsimHelper {
     config.controler().setLastIteration(iterationsMax);    
   }
 
+  /** Reads a separate config file that is supposed to ONLY contain the activity types configuration that goes alongside
+   * the plans.xml. The configuration of the activities in this config file is merged with the provided config.
+   * 
+   * Note: Currently there is no fail safe for if users provide additional configuration in this file. This is now
+   * simply merged with the config as well. IDeally we refactor this so that ONLY the activity component is merged. However
+   * the MATSim code is quite messy and not documented very well on how to do this elegantly.
+   * 
+   * @param config to merge with activity configuration
+   * @param keyValueMap to use to locate the activity configuration file
+   */
   public static void configureActivityConfig(final Config config, final Map<String, String> keyValueMap) {
-    // TODO Auto-generated method stub
+    String activityConfigValue = keyValueMap.get(ACTIVITY_CONFIG_KEY);
+    if(StringUtils.isNullOrBlank(activityConfigValue )) {
+      LOGGER.warning(String.format("Missing activity configuration file (--%s), invalid simulation run",ACTIVITY_CONFIG_KEY));
+      return;
+    }
+    if(!Paths.get(activityConfigValue).toFile().exists()) {
+      LOGGER.warning(String.format("Provided activity configuration file (--%s) not available, invalid simulation run",ACTIVITY_CONFIG_KEY));
+    }
     
+    /* merge two config files assuming the activity config file ONLY contains the activity configuration portion */
+    ConfigUtils.loadConfig(config, activityConfigValue);
   }
 
   

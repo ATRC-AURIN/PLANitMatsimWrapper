@@ -38,14 +38,15 @@ import org.planit.utils.exceptions.PlanItException;
  * The following command line options are available when configuring a simulation via the command line:
  * 
  * <ul>
- * <li>--modes          indicates the mode support, options {@code car_sim (default), car_sim_pt_teleport, car_pt_sim}</li>
- * <li>--crs            indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234</li>
- * <li>--network        path to the network file, when absent network is assumed in the cwd under "./network.xml"</li>
- * <li>--network_crs    coordinate reference system of the network file, e.g. EPSG:1234, when absent it is used as is in MATSim</li>
- * <li>--plans          path to the activities file, when absent plans are assumed in the cwd under "./plans.xml"</li>
- * <li>--plans_crs      coordinate reference system of the plans file, e.g. EPSG:1234, when absent it is used as is in MATSim</li>
- * <li>--starttime      start time of the simulation in "hh:mm:ss" format, ignore activities in the plans file before this time</li>
- * <li>--endtime        end time of the simulation in "hh:mm:ss" format, ignore activities in the plans file after this time</li>
+ * <li>--modes            indicates the mode support, options {@code car_sim (default), car_sim_pt_teleport, car_pt_sim}</li>
+ * <li>--crs              indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234</li>
+ * <li>--network          path to the network file, when absent network is assumed in the cwd under "./network.xml"</li>
+ * <li>--network_crs      coordinate reference system of the network file, e.g. EPSG:1234, when absent it is used as is in MATSim</li>
+ * <li>--plans            path to the activities file, when absent plans are assumed in the cwd under "./plans.xml"</li>
+ * <li>--plans_crs        coordinate reference system of the plans file, e.g. EPSG:1234, when absent it is used as is in MATSim</li>
+ * <li>--activity_config  path to activity config file defining activity types portion in MATSim config file format (plancalcscore section only) compatible with the plans file</li>
+ * <li>--starttime        start time of the simulation in "hh:mm:ss" format, ignore activities in the plans file before this time</li>
+ * <li>--endtime          end time of the simulation in "hh:mm:ss" format, ignore activities in the plans file after this time</li>
  * <li>--iterations_max maximum number of iterations the simulation will run before terminating </li>
  * </ul> 
  * <p>
@@ -172,6 +173,10 @@ public class PlanitAurinMatsimMain {
     else if(PlanitAurinMatsimHelper.TYPE_CONFIG_VALUE.equals(keyValueMap.get(PlanitAurinMatsimHelper.TYPE_KEY))) {
       Config config = ConfigUtils.createConfig();
       
+      /* do this first to ensure that other options are not overwritten by this additional config file in case
+       * the user includes more than just the activity configuration portion */
+      PlanitAurinMatsimHelper.configureActivityConfig(config,keyValueMap);
+      
       PlanitAurinMatsimHelper.configureModes(config, keyValueMap);
       PlanitAurinMatsimHelper.configureCrs(config,keyValueMap);
       PlanitAurinMatsimHelper.configureNetwork(config,keyValueMap);
@@ -180,10 +185,7 @@ public class PlanitAurinMatsimMain {
       PlanitAurinMatsimHelper.configurePlansCrs(config,keyValueMap);
       PlanitAurinMatsimHelper.configureStartTime(config,keyValueMap);
       PlanitAurinMatsimHelper.configureEndTime(config,keyValueMap);
-      PlanitAurinMatsimHelper.configureIterationsMax(config,keyValueMap);
-      
-      //TODO: below here      
-      PlanitAurinMatsimHelper.configureActivityConfig(config,keyValueMap);     
+      PlanitAurinMatsimHelper.configureIterationsMax(config,keyValueMap);          
       
       new ConfigWriter(config).write(absOutputDir);
     }
