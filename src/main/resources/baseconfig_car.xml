@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE config SYSTEM "http://www.matsim.org/files/dtd/config_v2.dtd">
+<config>
+  <module name="controler" >
+    <!-- Sets whether graphs showing some analyses should automatically be generated during the simulation. The generation of graphs usually takes a small amount of time that does not have any weight in big simulations, but add a significant overhead in smaller runs or in test cases where the graphical output is not even requested. -->
+    <param name="createGraphs" value="false" />
+    <!-- true if at the end of a run, plans, network, config etc should be dumped to a file -->
+    <param name="dumpDataAtEnd" value="false" />
+    <!-- Defines which mobility simulation will be used. Currently supported: qsim JDEQSim 
+    Depending on the chosen mobsim, you'll have to add additional config modules to configure the corresponding mobsim.
+    For 'qsim', add a module 'qsim' to the config. -->
+    <param name="mobsim" value="qsim" />
+    <param name="outputDirectory" value="./output" />
+    <!-- iterationNumber % writeEventsInterval == 0 defines in which iterations events are written to a file. `0' disables events writing completely. -->
+    <param name="writeEventsInterval" value="10" />
+    <!-- iterationNumber % writePlansInterval == 0 defines (hopefully) in which iterations plans are written to a file. `0' disables plans writing completely.  Some plans in early iterations are always written -->
+    <param name="writePlansInterval" value="10" />
+    <!-- iterationNumber % writeSnapshotsInterval == 0 defines in which iterations snapshots are written to a file. `0' disables snapshots writing completely -->
+    <param name="writeSnapshotsInterval" value="1" />
+  </module>
+  <module name="global" >
+    <param name="coordinateSystem" value="Atlantis" />
+    <!-- "global" number of threads.  This number is used, e.g., for replanning, but NOT in the mobsim.  This can typically be set to as many cores as you have available, or possibly even slightly more. -->
+    <param name="numberOfThreads" value="4" />
+  </module>
+  <module name="linkStats" >
+    <!-- Specifies over how many iterations the link volumes should be averaged that are used for the link statistics. Use 1 or 0 to only use the link volumes of a single iteration. This values cannot be larger than the value specified for writeLinkStatsInterval -->
+    <param name="averageLinkStatsOverIterations" value="5" />
+    <!-- Specifies how often the link stats should be calculated and written. Use 0 to disable the generation of link stats. -->
+    <param name="writeLinkStatsInterval" value="10" />
+  </module>
+  <module name="planscalcroute" >
+    <!-- All the modes for which the router is supposed to generate network routes (like car) -->
+    <param name="networkModes" value="car" />
+  </module>
+  <module name="qsim" >
+    <!-- default: FIFO; options: FIFO PassingQ SeepageQ -->
+    <param name="linkDynamics" value="FIFO" />
+    <!-- The (initial) width of the links of the network. Use positive floating point values. This is used only for visualisation. -->
+    <param name="linkWidth" value="30.0" />
+    <!-- [comma-separated list] Defines which modes are congested modes. Technically, these are the modes that the departure handler of the netsimengine handles.  Effective cell size, effective lane width, flow capacity factor, and storage capacity factor need to be set with diligence.  Need to be vehicular modes to make sense. -->
+    <param name="mainMode" value="car" />
+    <!-- Number of threads used for the QSim.  Note that this setting is independent from the "global" threads setting.  In contrast to earlier versions, the non-parallel special version is no longer there. -->
+    <param name="numberOfThreads" value="4" />
+    <param name="timeStepSize" value="00:00:01" />
+    <!-- options: queue withHoles kinematicWaves  -->
+    <param name="trafficDynamics" value="queue" />
+    <!-- Set this parameter to true if lanes should be used, false if not. -->
+    <param name="useLanes" value="false" />
+    <!-- Defines what happens if an agent wants to depart, but the specified vehicle is not available. One of: teleport wait exception  -->
+    <param name="vehicleBehavior" value="teleport" />
+    <!-- If vehicles should all be the same default vehicle, or come from the vehicles file, or something else.  Possible values:  defaultVehicle modeVehicleTypesFromVehiclesData fromVehiclesData -->
+    <param name="vehiclesSource" value="defaultVehicle" />
+  </module>
+  <module name="strategy" >
+    <!-- maximum number of plans per agent.  ``0'' means ``infinity''.  Currently (2010), ``5'' is a good number -->
+    <param name="maxAgentPlanMemorySize" value="5" />
+    <!-- strategyName of PlanSelector for plans removal.  Possible defaults: WorstPlanSelector SelectRandom SelectExpBetaForRemoval ChangeExpBetaForRemoval PathSizeLogitSelectorForRemoval . The current default, WorstPlanSelector is not a good choice from a discrete choice theoretical perspective. Alternatives, however, have not been systematically tested. kai, feb'12 -->
+    <param name="planSelectorForRemoval" value="WorstPlanSelector" />
+  </module>
+  <module name="travelTimeCalculator" >
+    <!-- (only for backwards compatibility; only used if separateModes==false && + filterModes==true)  Transport modes that will be respected by the travel time collector. 'car' is default which includes also buses from the pt simulation module. -->
+    <param name="analyzedModes" value="car" />
+    <param name="calculateLinkToLinkTravelTimes" value="false" />
+    <param name="calculateLinkTravelTimes" value="true" />
+    <!-- The length (in sec) of the time period that is split into time bins; an additional time bin is created to aggregate all travel times collected after maxTime -->
+    <param name="maxTime" value="108000" />
+    <param name="travelTimeAggregator" value="optimistic" />
+    <!-- The size of the time bin (in sec) into which the link travel times are aggregated for the router -->
+    <param name="travelTimeBinSize" value="900" />
+    <!-- How to deal with link entry times at different positions during the time bin. Currently supported: average, linearinterpolation -->
+    <param name="travelTimeGetter" value="average" />
+  </module>
+</config>

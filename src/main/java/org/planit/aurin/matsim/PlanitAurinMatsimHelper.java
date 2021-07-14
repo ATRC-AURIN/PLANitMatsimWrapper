@@ -1,5 +1,6 @@
 package org.planit.aurin.matsim;
 
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -10,6 +11,7 @@ import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.utils.misc.Time;
 import org.planit.utils.exceptions.PlanItException;
 import org.planit.utils.misc.StringUtils;
+import org.planit.utils.resource.ResourceUtils;
 
 /**
  * Helper methods to configure the AURIN MATSim wrapper based on user arguments provided for this wrapper.
@@ -24,6 +26,9 @@ public class PlanitAurinMatsimHelper {
   
   /** Path from which application was invoked */
   public static final Path CURRENT_PATH = Path.of("");
+  
+  /** the resource file reflecting the base car only configuration for a MATSim run */
+  public static final String DEFAULT_CAR_CONFIG_RESOURCE = "baseconfig_car.xml";
   
   //----------------------------------------------------
   //-------- OUTPUT_PATH ---------------------------
@@ -129,12 +134,226 @@ public class PlanitAurinMatsimHelper {
   public static final String ITERATIONS_MAX_KEY = "iterations_max";  
   
   //----------------------------------------------------
-  //-------- ACTIVITY CONFIG --------------------------
+  //-------- ACTIVITY CONFIG ---------------------------
   //----------------------------------------------------  
     
   /** Key reflecting the plan file location */
-  public static final String ACTIVITY_CONFIG_KEY = "activity_config";    
+  public static final String ACTIVITY_CONFIG_KEY = "activity_config";  
+  
+  //----------------------------------------------------
+  //-------- CONFIG ------------------------------------
+  //----------------------------------------------------  
     
+  /** Key reflecting the MATSim config file location in case simulation is run based on a file */
+  public static final String CONFIG_KEY = "config";
+  
+  /** Key reflecting the MATSim override config file locations in case simulation is run based on config file(s) */
+  public static final String OVERRIDE_CONFIG_KEY = "override_config";   
+    
+  /** Configure the available modes in the simulation based on command line arguments provided
+   * 
+   * @param config to alter
+   * @param keyValueMap to extract configuration choice from
+   */
+  private static void configureModes(final Config config, final Map<String, String> keyValueMap) {
+    String modesValue = keyValueMap.get(MODES_KEY);
+    switch (modesValue) {
+      case MODES_CAR_SIM_VALUE:
+        config.changeMode().setModes(new String[] {MATSIM_CAR_MODE});
+        break;
+      case MODES_CAR_SIM_PT_TELEPORT_VALUE:
+        LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", modesValue));
+        break;        
+      case MODES_CAR_PT_SIM_VALUE:
+        LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", modesValue));
+        break;                
+      default:
+        LOGGER.warning(String.format("Unknown value %s for --modes argument, ignored", modesValue));
+    }        
+  }
+
+  /** Configure the CRS of the simulation. If not set we use the default MATSIM_DEFAULT_GLOBAL_CRS
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */  
+  private static void configureCrs(Config config, Map<String, String> keyValueMap) {
+    String crsValue = keyValueMap.get(CRS_KEY);
+    if(StringUtils.isNullOrBlank(crsValue)) {
+      crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
+    }
+    
+    config.global().setCoordinateSystem(crsValue);
+  }
+
+  /** Configure the location of the network. If not set we use the current working directory and default network name MATSIM_DEFAULT_NETWORK.
+   * When invalid path is provided we log a warning and ignore.
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */
+  private static void configureNetwork(final Config config, final Map<String, String> keyValueMap) {
+    
+    String networkFileLocation = keyValueMap.get(NETWORK_KEY);     
+    try {      
+      
+      Path networkFileLocationAsPath = null;      
+      if(StringUtils.isNullOrBlank(networkFileLocation)) {
+        networkFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_NETWORK).toAbsolutePath().toString();
+      }      
+      networkFileLocationAsPath = Paths.get(networkFileLocation);
+      
+      /* set network path location */
+      config.network().setInputFile(networkFileLocationAsPath.toAbsolutePath().toString());
+      
+    }catch (Exception e) {
+      LOGGER.warning(String.format("Invalid network file location %s for --network, ignored", networkFileLocation));
+    }   
+  }
+
+  /** Configure the CRS of the network. If not set we use the geo data as is without any conversion. Otherwise it is converted to the MATSim 
+   * simulation global CRS.
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */  
+  private static void configureNetworkCrs(Config config, Map<String, String> keyValueMap) {
+    String crsValue = keyValueMap.get(CRS_KEY);
+    if(StringUtils.isNullOrBlank(crsValue)) {
+      crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
+    }
+    
+    config.network().setInputCRS(crsValue);
+  }
+
+  /** Configure the location of the activities. If not set we use the current working directory and default plans name MATSIM_DEFAULT_PLANS.
+   * When invalid path is provided we log a warning and ignore.
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */
+  private static void configurePlans(final Config config, final Map<String, String> keyValueMap) {
+    String planFileLocation = keyValueMap.get(PLANS_KEY);     
+    try {      
+      
+      Path planFileLocationAsPath = null;      
+      if(StringUtils.isNullOrBlank(planFileLocation)) {
+        planFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_PLANS).toAbsolutePath().toString();
+      }      
+      planFileLocationAsPath = Paths.get(planFileLocation);
+      
+      /* set plans path location */
+      config.plans().setInputFile(planFileLocationAsPath.toAbsolutePath().toString());
+      
+    }catch (Exception e) {
+      LOGGER.warning(String.format("Invalid plans file location %s for --plans, ignored", planFileLocation));
+    } 
+  }
+
+  /** Configure the CRS of the plans. If not set we use the geo data as is without any conversion. Otherwise it is converted to the MATSim 
+   * simulation global CRS.
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */   
+  private static void configurePlansCrs(Config config, Map<String, String> keyValueMap) {
+    String crsValue = keyValueMap.get(CRS_KEY);
+    if(StringUtils.isNullOrBlank(crsValue)) {
+      crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
+    }
+    
+    config.plans().setInputCRS(crsValue);
+  }
+
+  /** Configure the start time of the simulation. If not set we use the default MATSIM_DEFAULT_STARTTIME and all activities
+   * are considered. 
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */     
+  private static void configureStartTime(final Config config, final Map<String, String> keyValueMap) {
+    String startTimeValue = keyValueMap.get(STARTTIME_KEY);
+    if(StringUtils.isNullOrBlank(startTimeValue)) {
+      startTimeValue = MATSIM_DEFAULT_STARTTIME;
+    }
+           
+    config.qsim().setStartTime(Time.parseTime(startTimeValue));
+  }
+
+  /** Configure the end time of the simulation. If not set we use the default MATSIM_DEFAULT_ENDTIME and all activities
+   * are considered. 
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */       
+  private static void configureEndTime(final Config config, final Map<String, String> keyValueMap) {
+    String startTimeValue = keyValueMap.get(ENDTIME_KEY);
+    if(StringUtils.isNullOrBlank(startTimeValue)) {
+      startTimeValue = MATSIM_DEFAULT_ENDTIME;
+    }
+           
+    config.qsim().setStartTime(Time.parseTime(startTimeValue));  }
+
+  /** Configure the maximum number of iterations of the simulation. If not set we use the default DEFAULT_ITERATIONS_MAX.
+   * 
+   * @param config to configure
+   * @param keyValueMap to extract location from
+   */     
+  private static void configureIterationsMax(final Config config, final Map<String, String> keyValueMap) {
+    String iterationsMaxValue = keyValueMap.get(ITERATIONS_MAX_KEY);
+    
+    Integer iterationsMax = null; 
+    if(StringUtils.isNullOrBlank(iterationsMaxValue)) {
+      iterationsMax = DEFAULT_ITERATIONS_MAX;
+    }else {
+      iterationsMax = Integer.parseInt(iterationsMaxValue);  
+    }
+           
+    config.controler().setLastIteration(iterationsMax);    
+  }
+
+  /** Reads a separate config file that is supposed to ONLY contain the activity types configuration that goes alongside
+   * the plans.xml. The configuration of the activities in this config file is merged with the provided config.
+   * 
+   * Note: Currently there is no fail safe for if users provide additional configuration in this file. This is now
+   * simply merged with the config as well. IDeally we refactor this so that ONLY the activity component is merged. However
+   * the MATSim code is quite messy and not documented very well on how to do this elegantly.
+   * 
+   * @param config to merge with activity configuration
+   * @param keyValueMap to use to locate the activity configuration file
+   */
+  private static void configureActivityConfig(final Config config, final Map<String, String> keyValueMap) {
+    String activityConfigValue = keyValueMap.get(ACTIVITY_CONFIG_KEY);
+    if(StringUtils.isNullOrBlank(activityConfigValue )) {
+      LOGGER.warning(String.format("Missing activity configuration file (--%s), invalid simulation run",ACTIVITY_CONFIG_KEY));
+      return;
+    }
+    if(!Paths.get(activityConfigValue).toFile().exists()) {
+      LOGGER.warning(String.format("Provided activity configuration file (--%s) not available, invalid simulation run",ACTIVITY_CONFIG_KEY));
+    }
+    
+    /* merge two config files assuming the activity config file ONLY contains the activity configuration portion */
+    ConfigUtils.loadConfig(config, activityConfigValue);
+  }
+
+  /**
+   * Create the default configuration for a car only simulation based on this wrapper's default config
+   * file.
+   */
+  private static Config createDefaultCarconfiguration() {
+    Config config = ConfigUtils.createConfig();
+    URL baseConfigUrl = ResourceUtils.getResourceUrl(DEFAULT_CAR_CONFIG_RESOURCE);    
+    ConfigUtils.loadConfig(config, baseConfigUrl.getPath());
+    return config;
+  }
+
+  /** Verify if the simulation is based on using MATSim configuration file(s) or using command line arguments
+   * 
+   * @return true when based on config files, false otherwise
+   */
+  public static boolean isSimulationConfigurationFileBased(final Map<String, String> keyValueMap) {
+    return keyValueMap.containsKey(CONFIG_KEY) && isSimulationType(keyValueMap);
+  }  
           
   /** Check if the chosen type relates to generation a configuration file or not
    * 
@@ -169,12 +388,40 @@ public class PlanitAurinMatsimHelper {
   }   
    
 
+  /** Collect the location of the config file from the command line arguments (if any)
+   * 
+   * @param keyValueMap to extract from
+   * @return found config file location
+   */
+  public static String getConfigFileLocation(Map<String, String> keyValueMap) {
+    if(!isSimulationConfigurationFileBased(keyValueMap)) {
+      LOGGER.warning("Cannot extract config file location when simulation is not config file based");
+      return null;
+    }
+    
+    return keyValueMap.get(CONFIG_KEY);    
+  }
+
+  /** Collect the location of an additional config file which overrides the base config file for the available contents
+   * 
+   * @param keyValueMap to extract from
+   * @return found override config file location
+   */  
+  public static String getOverrideConfigFileLocation(final Map<String, String> keyValueMap) {
+    if(!isSimulationConfigurationFileBased(keyValueMap)) {
+      LOGGER.warning("Cannot extract override config file locations when simulation is not properly config file based");
+      return null;
+    }
+    
+    return keyValueMap.get(OVERRIDE_CONFIG_KEY); 
+  }
+
   /** The output directory to use. If not configure the default is provided which is the working directory of the application
    * 
    * @param keyValueMap to extract information from
    * @throws PlanItException thrown if error
    */
-  public static Path parseOutputDirectory(Map<String, String> keyValueMap) throws PlanItException {
+  public static Path parseOutputDirectory(final Map<String, String> keyValueMap) throws PlanItException {
     PlanItException.throwIfNull(keyValueMap, "Configuration information null");
     
     if(keyValueMap.containsKey(OUTPUT_KEY)) {
@@ -186,191 +433,44 @@ public class PlanitAurinMatsimHelper {
   }
 
 
-  /** Configure the available modes in the simulation based on command line arguments provided
+  /** Generate a MATSim configuration in memory based on command line arguments. 
    * 
-   * @param config to alter
-   * @param keyValueMap to extract configuration choice from
-   */
-  public static void configureModes(final Config config, final Map<String, String> keyValueMap) {
-    String modesValue = keyValueMap.get(MODES_KEY);
-    switch (modesValue) {
-      case MODES_CAR_SIM_VALUE:
-        config.changeMode().setModes(new String[] {MATSIM_CAR_MODE});
-        break;
-      case MODES_CAR_SIM_PT_TELEPORT_VALUE:
-        LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", modesValue));
-        break;        
-      case MODES_CAR_PT_SIM_VALUE:
-        LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", modesValue));
-        break;                
-      default:
-        LOGGER.warning(String.format("Unknown value %s for --modes argument, ignored", modesValue));
-    }        
-  }
-  
-  /** Configure the CRS of the simulation. If not set we use the default MATSIM_DEFAULT_GLOBAL_CRS
-   * 
-   * @param config to configure
-   * @param keyValueMap to extract location from
+   * @param keyValueMap to extract command line arguments from
+   * @return created MATSim config instance
    */  
-  public static void configureCrs(Config config, Map<String, String> keyValueMap) {
-    String crsValue = keyValueMap.get(CRS_KEY);
-    if(StringUtils.isNullOrBlank(crsValue)) {
-      crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
-    }
+  public static Config createConfigurationFromCommandLine(final Map<String, String> keyValueMap) {
+    Config config = createDefaultCarconfiguration();
     
-    config.global().setCoordinateSystem(crsValue);
+    /* do this first to ensure that other options are not overwritten by this additional config file in case
+     * the user includes more than just the activity configuration portion */
+    PlanitAurinMatsimHelper.configureActivityConfig(config,keyValueMap);
+    
+    PlanitAurinMatsimHelper.configureModes(config, keyValueMap);
+    PlanitAurinMatsimHelper.configureCrs(config,keyValueMap);
+    PlanitAurinMatsimHelper.configureNetwork(config,keyValueMap);
+    PlanitAurinMatsimHelper.configureNetworkCrs(config,keyValueMap);
+    PlanitAurinMatsimHelper.configurePlans(config,keyValueMap);
+    PlanitAurinMatsimHelper.configurePlansCrs(config,keyValueMap);
+    PlanitAurinMatsimHelper.configureStartTime(config,keyValueMap);
+    PlanitAurinMatsimHelper.configureEndTime(config,keyValueMap);
+    PlanitAurinMatsimHelper.configureIterationsMax(config,keyValueMap);
+    
+    return config;
   }  
-
-  /** Configure the location of the network. If not set we use the current working directory and default network name MATSIM_DEFAULT_NETWORK.
-   * When invalid path is provided we log a warning and ignore.
-   * 
-   * @param config to configure
-   * @param keyValueMap to extract location from
-   */
-  public static void configureNetwork(final Config config, final Map<String, String> keyValueMap) {
-    
-    String networkFileLocation = keyValueMap.get(NETWORK_KEY);     
-    try {      
-      
-      Path networkFileLocationAsPath = null;      
-      if(StringUtils.isNullOrBlank(networkFileLocation)) {
-        networkFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_NETWORK).toAbsolutePath().toString();
-      }      
-      networkFileLocationAsPath = Paths.get(networkFileLocation);
-      
-      /* set network path location */
-      config.network().setInputFile(networkFileLocationAsPath.toAbsolutePath().toString());
-      
-    }catch (Exception e) {
-      LOGGER.warning(String.format("Invalid network file location %s for --network, ignored", networkFileLocation));
-    }   
-  }
   
-  /** Configure the CRS of the network. If not set we use the geo data as is without any conversion. Otherwise it is converted to the MATSim 
-   * simulation global CRS.
+  /** Generate a MATSim configuration in memory based on config file(s). 
    * 
-   * @param config to configure
-   * @param keyValueMap to extract location from
+   * @param configFile location to parse base config file from
+   * @param overrideFiles locations to parse additional config files from to override base config file
+   * @return created MATSim config instance
    */  
-  public static void configureNetworkCrs(Config config, Map<String, String> keyValueMap) {
-    String crsValue = keyValueMap.get(CRS_KEY);
-    if(StringUtils.isNullOrBlank(crsValue)) {
-      crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
+  public static Config createConfigurationFromFiles(final String configFile, final String... overrideFiles) {  
+    Config config = ConfigUtils.loadConfig(configFile);
+    if(overrideFiles!=null) {
+      for(int index=0;index<overrideFiles.length;++index) {
+        ConfigUtils.loadConfig(config, overrideFiles[index]);
+      }
     }
-    
-    config.network().setInputCRS(crsValue);
-  }   
-
-  /** Configure the location of the activities. If not set we use the current working directory and default plans name MATSIM_DEFAULT_PLANS.
-   * When invalid path is provided we log a warning and ignore.
-   * 
-   * @param config to configure
-   * @param keyValueMap to extract location from
-   */
-  public static void configurePlans(final Config config, final Map<String, String> keyValueMap) {
-    String planFileLocation = keyValueMap.get(PLANS_KEY);     
-    try {      
-      
-      Path planFileLocationAsPath = null;      
-      if(StringUtils.isNullOrBlank(planFileLocation)) {
-        planFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_PLANS).toAbsolutePath().toString();
-      }      
-      planFileLocationAsPath = Paths.get(planFileLocation);
-      
-      /* set plans path location */
-      config.plans().setInputFile(planFileLocationAsPath.toAbsolutePath().toString());
-      
-    }catch (Exception e) {
-      LOGGER.warning(String.format("Invalid plans file location %s for --plans, ignored", planFileLocation));
-    } 
+    return config;
   }
-
-  /** Configure the CRS of the plans. If not set we use the geo data as is without any conversion. Otherwise it is converted to the MATSim 
-   * simulation global CRS.
-   * 
-   * @param config to configure
-   * @param keyValueMap to extract location from
-   */   
-  public static void configurePlansCrs(Config config, Map<String, String> keyValueMap) {
-    String crsValue = keyValueMap.get(CRS_KEY);
-    if(StringUtils.isNullOrBlank(crsValue)) {
-      crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
-    }
-    
-    config.plans().setInputCRS(crsValue);
-  }
-
-  /** Configure the start time of the simulation. If not set we use the default MATSIM_DEFAULT_STARTTIME and all activities
-   * are considered. 
-   * 
-   * @param config to configure
-   * @param keyValueMap to extract location from
-   */     
-  public static void configureStartTime(final Config config, final Map<String, String> keyValueMap) {
-    String startTimeValue = keyValueMap.get(STARTTIME_KEY);
-    if(StringUtils.isNullOrBlank(startTimeValue)) {
-      startTimeValue = MATSIM_DEFAULT_STARTTIME;
-    }
-           
-    config.qsim().setStartTime(Time.parseTime(startTimeValue));
-  }
-
-  /** Configure the end time of the simulation. If not set we use the default MATSIM_DEFAULT_ENDTIME and all activities
-   * are considered. 
-   * 
-   * @param config to configure
-   * @param keyValueMap to extract location from
-   */       
-  public static void configureEndTime(final Config config, final Map<String, String> keyValueMap) {
-    String startTimeValue = keyValueMap.get(ENDTIME_KEY);
-    if(StringUtils.isNullOrBlank(startTimeValue)) {
-      startTimeValue = MATSIM_DEFAULT_ENDTIME;
-    }
-           
-    config.qsim().setStartTime(Time.parseTime(startTimeValue));  }
-
-  /** Configure the maximum number of iterations of the simulation. If not set we use the default DEFAULT_ITERATIONS_MAX.
-   * 
-   * @param config to configure
-   * @param keyValueMap to extract location from
-   */     
-  public static void configureIterationsMax(final Config config, final Map<String, String> keyValueMap) {
-    String iterationsMaxValue = keyValueMap.get(ITERATIONS_MAX_KEY);
-    
-    Integer iterationsMax = null; 
-    if(StringUtils.isNullOrBlank(iterationsMaxValue)) {
-      iterationsMax = DEFAULT_ITERATIONS_MAX;
-    }else {
-      iterationsMax = Integer.parseInt(iterationsMaxValue);  
-    }
-           
-    config.controler().setLastIteration(iterationsMax);    
-  }
-
-  /** Reads a separate config file that is supposed to ONLY contain the activity types configuration that goes alongside
-   * the plans.xml. The configuration of the activities in this config file is merged with the provided config.
-   * 
-   * Note: Currently there is no fail safe for if users provide additional configuration in this file. This is now
-   * simply merged with the config as well. IDeally we refactor this so that ONLY the activity component is merged. However
-   * the MATSim code is quite messy and not documented very well on how to do this elegantly.
-   * 
-   * @param config to merge with activity configuration
-   * @param keyValueMap to use to locate the activity configuration file
-   */
-  public static void configureActivityConfig(final Config config, final Map<String, String> keyValueMap) {
-    String activityConfigValue = keyValueMap.get(ACTIVITY_CONFIG_KEY);
-    if(StringUtils.isNullOrBlank(activityConfigValue )) {
-      LOGGER.warning(String.format("Missing activity configuration file (--%s), invalid simulation run",ACTIVITY_CONFIG_KEY));
-      return;
-    }
-    if(!Paths.get(activityConfigValue).toFile().exists()) {
-      LOGGER.warning(String.format("Provided activity configuration file (--%s) not available, invalid simulation run",ACTIVITY_CONFIG_KEY));
-    }
-    
-    /* merge two config files assuming the activity config file ONLY contains the activity configuration portion */
-    ConfigUtils.loadConfig(config, activityConfigValue);
-  }
-
-  
 }

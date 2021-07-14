@@ -6,9 +6,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
+import org.matsim.api.core.v01.Scenario;
 import org.matsim.core.config.Config;
-import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.config.ConfigWriter;
+import org.matsim.core.controler.Controler;
+import org.matsim.core.scenario.ScenarioUtils;
 import org.planit.logging.Logging;
 import org.planit.utils.args.ArgumentParser;
 import org.planit.utils.args.ArgumentStyle;
@@ -30,8 +32,8 @@ import org.planit.utils.exceptions.PlanItException;
  * </ul>
  * 
  * When choosing {@code default_config} all other configuration settings are ignored except for the --output option on where to store the result, 
- * when choosing {@code config} the configurable options are included in the config file that is generated, otherwise it is treated the same as
- * {@code default_config}. 
+ * when choosing {@code config} the configurable options are included in the config file that is generated as well as the defaults that otherwise would be
+ * applied by this wrapper's simulation runs (currently car only) , otherwise it is treated the same as {@code default_config}. 
  * <p>
  * When choosing {--type @code simulation}, one can either utilise MATsim config files to configure the simulation or the exposed
  * command line configuration options. When configuring the simulation here the default simulator of MATSim is used (qsim). 
@@ -59,8 +61,8 @@ import org.planit.utils.exceptions.PlanItException;
  * <p>
  * In case the user decides not to use these shortcuts but instead prefers its own configuration file(s) that is also possible, in which case the following two commands should be used:
  *  <ul>
- *  <li>--base_config: TODO</li>
- *  <li>--override_config: TODO (can be multiple in order)</li>
+ *  <li>--config TODO</li>
+ *  <li>--override_config TODO (can be multiple in order)</li>
  * </ul> 
  * 
  * We note that when the above options are used all other command line options for simulation are ignored since they custom configuration file takes precedence.
@@ -92,6 +94,63 @@ public class PlanitAurinMatsimMain {
 
   }
   
+  /** Conduct a MATSim simulation based on the provided command line configuration information. 
+   * 
+   * @param keyValueMap to use
+   * @param outputDir to use, use default if null
+   */  
+  private static void runSimulation(final Map<String, String> keyValueMap, Path outputDir) {
+    if(outputDir == null) {
+      outputDir = PlanitAurinMatsimHelper.DEFAULT_OUTPUT_PATH;
+    }
+    
+    /* simulation is using MATSim config files to configure everything or use command line arguments instead */
+    Config config = null;
+    if(PlanitAurinMatsimHelper.isSimulationConfigurationFileBased(keyValueMap)) {
+      config = PlanitAurinMatsimHelper.createConfigurationFromFiles(
+          PlanitAurinMatsimHelper.getConfigFileLocation(keyValueMap), PlanitAurinMatsimHelper.getOverrideConfigFileLocation(keyValueMap));
+    }else {
+      config = PlanitAurinMatsimHelper.createConfigurationFromCommandLine(keyValueMap);
+    }
+    
+    runSimulation(config);    
+  }
+
+  /** Conduct a MATSim simulation based on the provided configuration.
+   * 
+   * @param config to use
+   */
+  private static void runSimulation(Config config) {
+    Scenario scenario = ScenarioUtils.loadScenario(config);   
+    Controler controller = new Controler(scenario);
+    controller.run();    
+  }
+
+  /** Generate a MATSim configuration file and persist in output directory. Useful to allow users to get started and allow them to edit it offline and then provide it as input
+   * again to this wrapper for an actual simulation run
+   * 
+   * @param keyValueMap to use
+   * @param outputDir to use, use default if null
+   */
+  private static void generateMatsimConfiguration(final Map<String, String> keyValueMap, Path outputDir) {
+    if(outputDir == null) {
+      outputDir = PlanitAurinMatsimHelper.DEFAULT_OUTPUT_PATH;
+    }
+    
+    /* DEFAULT MATSIM FULL CONFIG */
+    String absOutputDir = outputDir.toAbsolutePath().toString();
+    if( PlanitAurinMatsimHelper.TYPE_DEFAULT_CONFIG_VALUE.equals(keyValueMap.get(PlanitAurinMatsimHelper.TYPE_KEY))){
+      org.matsim.run.CreateFullConfig.main(new String[] {absOutputDir});
+    }
+    /* CUSTOMISED MATSIM CONFIG */
+    else if(PlanitAurinMatsimHelper.TYPE_CONFIG_VALUE.equals(keyValueMap.get(PlanitAurinMatsimHelper.TYPE_KEY))) {
+      
+      Config config = PlanitAurinMatsimHelper.createConfigurationFromCommandLine(keyValueMap);                      
+      new ConfigWriter(config).write(absOutputDir);
+    }
+    
+  }
+
   /** Path from which application was invoked */
   public static final Path CURRENT_PATH = Path.of("");    
 
@@ -111,7 +170,7 @@ public class PlanitAurinMatsimMain {
       if (keyValueMap.containsKey(ARGUMENT_HELP)) {
 
         // TODO
-        LOGGER.info("help requested on running PLANit MATSim parser, this is not yet implemented");
+        LOGGER.info("--help is not yet implemented, see Javadoc instead for available arguments");
 
       } else {
 
@@ -127,7 +186,7 @@ public class PlanitAurinMatsimMain {
           
         }else if(PlanitAurinMatsimHelper.isSimulationType(keyValueMap)) {
           
-          conductMatsimSimulation(keyValueMap, outputDir);
+          runSimulation(keyValueMap, outputDir);
           
         }else {
           LOGGER.warning("--type value %s unknown, unable to proceed");
@@ -137,59 +196,9 @@ public class PlanitAurinMatsimMain {
       }
     } catch (Exception e) {
       LOGGER.severe(e.getMessage());
-      LOGGER.severe("Unable to execute MaTsim simulation from PLANit AURIN wrapper, terminating");
+      LOGGER.severe("Unable to execute MATSim simulation from PLANit AURIN wrapper, terminating");
     }
 
-  }
-
-  /** Conduct a MATSim simulation based on the provided configuration information. 
-   * 
-   * @param keyValueMap to use
-   * @param outputDir to use, use default if null
-   */  
-  private static void conductMatsimSimulation(final Map<String, String> keyValueMap, Path outputDir) {
-    if(outputDir == null) {
-      outputDir = PlanitAurinMatsimHelper.DEFAULT_OUTPUT_PATH;
-    }
-  }
-
-  /** Generate a MATSim configuration file. Useful to allow users to get started and allow them to edit it offline and then provide it as input
-   * again to this wrapper for an actual simulation run
-   * 
-   * @param keyValueMap to use
-   * @param outputDir to use, use default if null
-   */
-  private static void generateMatsimConfiguration(final Map<String, String> keyValueMap, Path outputDir) {
-    if(outputDir == null) {
-      outputDir = PlanitAurinMatsimHelper.DEFAULT_OUTPUT_PATH;
-    }
-    
-    /* DEFAULT MATSIM FULL CONFIG */
-    String absOutputDir = outputDir.toAbsolutePath().toString();
-    if( PlanitAurinMatsimHelper.TYPE_DEFAULT_CONFIG_VALUE.equals(keyValueMap.get(PlanitAurinMatsimHelper.TYPE_KEY))){
-      org.matsim.run.CreateFullConfig.main(new String[] {absOutputDir});
-    }
-    /* CUSTOMISED MATSIM CONFIG */
-    else if(PlanitAurinMatsimHelper.TYPE_CONFIG_VALUE.equals(keyValueMap.get(PlanitAurinMatsimHelper.TYPE_KEY))) {
-      Config config = ConfigUtils.createConfig();
-      
-      /* do this first to ensure that other options are not overwritten by this additional config file in case
-       * the user includes more than just the activity configuration portion */
-      PlanitAurinMatsimHelper.configureActivityConfig(config,keyValueMap);
-      
-      PlanitAurinMatsimHelper.configureModes(config, keyValueMap);
-      PlanitAurinMatsimHelper.configureCrs(config,keyValueMap);
-      PlanitAurinMatsimHelper.configureNetwork(config,keyValueMap);
-      PlanitAurinMatsimHelper.configureNetworkCrs(config,keyValueMap);
-      PlanitAurinMatsimHelper.configurePlans(config,keyValueMap);
-      PlanitAurinMatsimHelper.configurePlansCrs(config,keyValueMap);
-      PlanitAurinMatsimHelper.configureStartTime(config,keyValueMap);
-      PlanitAurinMatsimHelper.configureEndTime(config,keyValueMap);
-      PlanitAurinMatsimHelper.configureIterationsMax(config,keyValueMap);          
-      
-      new ConfigWriter(config).write(absOutputDir);
-    }
-    
   }
 
 }
