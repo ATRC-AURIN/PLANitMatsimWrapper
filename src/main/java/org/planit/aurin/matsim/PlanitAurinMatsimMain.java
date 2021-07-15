@@ -1,5 +1,6 @@
 package org.planit.aurin.matsim;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,16 +41,19 @@ import org.planit.utils.exceptions.PlanItException;
  * The following command line options are available when configuring a simulation via the command line:
  * 
  * <ul>
- * <li>--modes            indicates the mode support, options {@code car_sim (default), car_sim_pt_teleport, car_pt_sim}</li>
- * <li>--crs              indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234</li>
- * <li>--network          path to the network file, when absent network is assumed in the cwd under "./network.xml"</li>
- * <li>--network_crs      coordinate reference system of the network file, e.g. EPSG:1234, when absent it is used as is in MATSim</li>
- * <li>--plans            path to the activities file, when absent plans are assumed in the cwd under "./plans.xml"</li>
- * <li>--plans_crs        coordinate reference system of the plans file, e.g. EPSG:1234, when absent it is used as is in MATSim</li>
- * <li>--activity_config  path to activity config file defining activity types portion in MATSim config file format (plancalcscore section only) compatible with the plans file</li>
- * <li>--starttime        start time of the simulation in "hh:mm:ss" format, ignore activities in the plans file before this time</li>
- * <li>--endtime          end time of the simulation in "hh:mm:ss" format, ignore activities in the plans file after this time</li>
- * <li>--iterations_max maximum number of iterations the simulation will run before terminating </li>
+ * <li>--modes              indicates the mode support, options {@code car_sim (default), car_sim_pt_teleport, car_pt_sim}</li>
+ * <li>--crs                indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234</li>
+ * <li>--network            path to the network file, when absent network is assumed in the cwd under "./network.xml"</li>
+ * <li>--network_crs        coordinate reference system of the network file, e.g. EPSG:1234, when absent it is used as is in MATSim</li>
+ * <li>--plans              path to the activities file, when absent plans are assumed in the cwd under "./plans.xml"</li>
+ * <li>--plans_crs          coordinate reference system of the plans file, e.g. EPSG:1234, when absent it is used as is in MATSim</li>
+ * <li>--plans_sample       Sample percentage (between 0 and 1) of the population plans applied in simulation, when absent full sample is used. When in config mode, downsampled plan is persisted as well</li>
+ * <li>--activity_config    path to activity config file defining activity types portion in MATSim config file format (plancalcscore section only) compatible with the plans file</li>
+ * <li>--starttime          start time of the simulation in "hh:mm:ss" format, ignore activities in the plans file before this time</li>
+ * <li>--endtime            end time of the simulation in "hh:mm:ss" format, ignore activities in the plans file after this time</li>
+ * <li>--flowcap_factor     scale link flow capacity (between 0 and 1). Use icw down sampling of population plans to remain consistent. Default: 1
+ * <li>--storagecap_factor  scale link storage capacity (between 0 and 1). Use icw down sampling of population plans to remain consistent. Default: 1
+ * <li>--iterations_max     maximum number of iterations the simulation will run before terminating </li>
  * </ul> 
  * <p>
  * The {@code --modes} option defines what modes are simulated (car only, or car and pt) and how they are simulated. Currently only cars can be simulated, i.e., 
@@ -71,7 +75,7 @@ import org.planit.utils.exceptions.PlanItException;
  *
  */
 public class PlanitAurinMatsimMain {
-
+  
   /** logger to use */
   private static Logger LOGGER = null;
 
@@ -122,6 +126,7 @@ public class PlanitAurinMatsimMain {
    */
   private static void runSimulation(Config config) {
     Scenario scenario = ScenarioUtils.loadScenario(config);   
+        
     Controler controller = new Controler(scenario);
     controller.run();    
   }
@@ -179,14 +184,36 @@ public class PlanitAurinMatsimMain {
           return;
         }
         
-        Path outputDir = PlanitAurinMatsimHelper.parseOutputDirectory(keyValueMap);        
+        /* DOWN SAMPLING OF PLANS/POPULATION */
+        Path outputDir = PlanitAurinMatsimHelper.parseOutputDirectory(keyValueMap);
+        if(PlanitAurinMatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
+          /* down sampling cannot be done in memory. Requires creating new plans file
+           * So create new down sampled plans file and overwrite original plans file location so it is used
+           * for simulation (if that is the type) */
+          Path downSampledPopulationPath = PlanitAurinMatsimHelper.createDownSampledPopulation(keyValueMap, outputDir);
+          if(downSampledPopulationPath != null) {
+            keyValueMap.put(PlanitAurinMatsimHelper.PLANS_KEY, downSampledPopulationPath.toString());
+          }
+        }
+        
+        /* TYPE: CONFIGURATION ONLY */ 
         if(PlanitAurinMatsimHelper.isConfigurationType(keyValueMap)) {
           
           generateMatsimConfiguration(keyValueMap, outputDir);
+          LOGGER.info(String.format("Generated MATSim configuration file: %s",Path.of(outputDir.toString(),PlanitAurinMatsimHelper.DEFAULT_MATSIM_CONFIG_FILE).toString()));
+          if(PlanitAurinMatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
+            LOGGER.info(String.format("Generated downsampled MATSim plans file: %s",keyValueMap.get(PlanitAurinMatsimHelper.PLANS_KEY))); 
+          }
           
-        }else if(PlanitAurinMatsimHelper.isSimulationType(keyValueMap)) {
+        }
+        /* TYPE: SIMULATION ONLY */
+        else if(PlanitAurinMatsimHelper.isSimulationType(keyValueMap)) {
           
           runSimulation(keyValueMap, outputDir);
+          if(PlanitAurinMatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
+            /* any temporary downsampled path should be deleted upon termination of the simulation */
+            Files.delete(Path.of(keyValueMap.get(PlanitAurinMatsimHelper.PLANS_KEY)));
+          }          
           
         }else {
           LOGGER.warning("--type value %s unknown, unable to proceed");

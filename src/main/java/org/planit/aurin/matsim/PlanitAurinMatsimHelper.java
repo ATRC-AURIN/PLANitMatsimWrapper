@@ -6,10 +6,13 @@ import java.nio.file.Paths;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.matsim.api.core.v01.population.Population;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
+import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.utils.misc.Time;
 import org.planit.utils.exceptions.PlanItException;
+import org.planit.utils.math.Precision;
 import org.planit.utils.misc.StringUtils;
 import org.planit.utils.resource.ResourceUtils;
 
@@ -29,6 +32,9 @@ public class PlanitAurinMatsimHelper {
   
   /** the resource file reflecting the base car only configuration for a MATSim run */
   public static final String DEFAULT_CAR_CONFIG_RESOURCE = "baseconfig_car.xml";
+  
+  /** the default name for a MATSim configuration file*/
+  public static final String DEFAULT_MATSIM_CONFIG_FILE = "config.xml";  
   
   //----------------------------------------------------
   //-------- OUTPUT_PATH ---------------------------
@@ -95,17 +101,26 @@ public class PlanitAurinMatsimHelper {
   protected static String MATSIM_DEFAULT_NETWORK = "network.xml";
   
   /** Key reflecting the network file location */
-  public static final String NETWORK_KEY = "network";  
+  public static final String NETWORK_KEY = "network";
+  
+  /** Key reflecting the network crs */
+  public static final String NETWORK_CRS_KEY = "network_crs";    
   
   //----------------------------------------------------
-  //-------- PLAN --------------------------------------
+  //-------- PLANS --------------------------------------
   //----------------------------------------------------  
   
   /** the default network file name in MATSim*/
   protected static String MATSIM_DEFAULT_PLANS = "plans.xml";
   
   /** Key reflecting the plan file location */
-  public static final String PLANS_KEY = "plans";   
+  public static final String PLANS_KEY = "plans";
+  
+  /** Key reflecting the network crs */
+  public static final String PLANS_CRS_KEY = "plans_crs";
+  
+  /** Key reflecting the plan sample population percentage to use */
+  public static final String PLANS_SAMPLE_KEY = "plans_sample";         
   
   //----------------------------------------------------
   //-------- STARTTIME/ENDTIME -------------------------
@@ -149,7 +164,30 @@ public class PlanitAurinMatsimHelper {
   
   /** Key reflecting the MATSim override config file locations in case simulation is run based on config file(s) */
   public static final String OVERRIDE_CONFIG_KEY = "override_config";   
+  
+  //----------------------------------------------------
+  //-------- CAPACITY ---------------------------
+  //----------------------------------------------------  
     
+  /** Key reflecting the factor to apply to all link flow capacities in simulation */
+  public static final String CAPACITY_FLOW_FACTOR_KEY = "flowcap_factor";      
+  
+  /** Key reflecting the factor to apply to all link storage capacities in simulation */
+  public static final String CAPACITY_STORAGE_FACTOR_KEY = "storagecap_factor";       
+    
+  /** Collect the plans file location from command line arguments. If not set we use the current working directory and default plans name MATSIM_DEFAULT_PLANS.
+   * 
+   * @param keyValueMap to extract location from
+   * @return found location
+   */
+  private static Path extractPlansFileLocation(Map<String, String> keyValueMap) {
+    String planFileLocation = keyValueMap.get(PLANS_KEY);     
+    if(StringUtils.isNullOrBlank(planFileLocation)) {
+      planFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_PLANS).toAbsolutePath().toString();
+    }      
+    return Paths.get(planFileLocation);
+  }
+
   /** Configure the available modes in the simulation based on command line arguments provided
    * 
    * @param config to alter
@@ -160,6 +198,7 @@ public class PlanitAurinMatsimHelper {
     switch (modesValue) {
       case MODES_CAR_SIM_VALUE:
         config.changeMode().setModes(new String[] {MATSIM_CAR_MODE});
+        LOGGER.info("[SETTING] simulation mode: car");
         break;
       case MODES_CAR_SIM_PT_TELEPORT_VALUE:
         LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", modesValue));
@@ -183,6 +222,7 @@ public class PlanitAurinMatsimHelper {
       crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
     }
     
+    LOGGER.info(String.format("[SETTING] MATSim core CRS: %s", crsValue));
     config.global().setCoordinateSystem(crsValue);
   }
 
@@ -204,6 +244,7 @@ public class PlanitAurinMatsimHelper {
       networkFileLocationAsPath = Paths.get(networkFileLocation);
       
       /* set network path location */
+      LOGGER.info(String.format("[SETTING] MATSim network file: %s", networkFileLocationAsPath.toString()));
       config.network().setInputFile(networkFileLocationAsPath.toAbsolutePath().toString());
       
     }catch (Exception e) {
@@ -218,11 +259,12 @@ public class PlanitAurinMatsimHelper {
    * @param keyValueMap to extract location from
    */  
   private static void configureNetworkCrs(Config config, Map<String, String> keyValueMap) {
-    String crsValue = keyValueMap.get(CRS_KEY);
+    String crsValue = keyValueMap.get(NETWORK_CRS_KEY);
     if(StringUtils.isNullOrBlank(crsValue)) {
       crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
     }
     
+    LOGGER.info(String.format("[SETTING] MATSim network input CRS: %s", crsValue));
     config.network().setInputCRS(crsValue);
   }
 
@@ -236,13 +278,10 @@ public class PlanitAurinMatsimHelper {
     String planFileLocation = keyValueMap.get(PLANS_KEY);     
     try {      
       
-      Path planFileLocationAsPath = null;      
-      if(StringUtils.isNullOrBlank(planFileLocation)) {
-        planFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_PLANS).toAbsolutePath().toString();
-      }      
-      planFileLocationAsPath = Paths.get(planFileLocation);
+      Path planFileLocationAsPath = extractPlansFileLocation(keyValueMap);
       
       /* set plans path location */
+      LOGGER.info(String.format("[SETTING] MATSim plans/population file: %s", planFileLocationAsPath.toString()));
       config.plans().setInputFile(planFileLocationAsPath.toAbsolutePath().toString());
       
     }catch (Exception e) {
@@ -257,11 +296,12 @@ public class PlanitAurinMatsimHelper {
    * @param keyValueMap to extract location from
    */   
   private static void configurePlansCrs(Config config, Map<String, String> keyValueMap) {
-    String crsValue = keyValueMap.get(CRS_KEY);
+    String crsValue = keyValueMap.get(PLANS_CRS_KEY);
     if(StringUtils.isNullOrBlank(crsValue)) {
       crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
     }
     
+    LOGGER.info(String.format("[SETTING] MATSim plans CRS: %s", crsValue));
     config.plans().setInputCRS(crsValue);
   }
 
@@ -277,6 +317,7 @@ public class PlanitAurinMatsimHelper {
       startTimeValue = MATSIM_DEFAULT_STARTTIME;
     }
            
+    LOGGER.info(String.format("[SETTING] MATSim simulation start time: %s", startTimeValue));
     config.qsim().setStartTime(Time.parseTime(startTimeValue));
   }
 
@@ -287,12 +328,51 @@ public class PlanitAurinMatsimHelper {
    * @param keyValueMap to extract location from
    */       
   private static void configureEndTime(final Config config, final Map<String, String> keyValueMap) {
-    String startTimeValue = keyValueMap.get(ENDTIME_KEY);
-    if(StringUtils.isNullOrBlank(startTimeValue)) {
-      startTimeValue = MATSIM_DEFAULT_ENDTIME;
+    String endTimeValue = keyValueMap.get(ENDTIME_KEY);
+    if(StringUtils.isNullOrBlank(endTimeValue)) {
+      endTimeValue = MATSIM_DEFAULT_ENDTIME;
     }
            
-    config.qsim().setStartTime(Time.parseTime(startTimeValue));  }
+    LOGGER.info(String.format("[SETTING] MATSim simulation end time: %s", endTimeValue));
+    config.qsim().setStartTime(Time.parseTime(endTimeValue));  }
+
+  /** Configure the storage capacity factor to apply to all links in simulation
+   * 
+   * @param config to use
+   * @param keyValueMap to extract value from
+   */
+  private static void configureStorageCapacityFactor(Config config, Map<String, String> keyValueMap) {
+    double factor = 1;
+    try {
+      String storageCapacityFactor = keyValueMap.get(CAPACITY_STORAGE_FACTOR_KEY);
+      if(storageCapacityFactor != null) {
+        factor = Double.parseDouble(storageCapacityFactor);
+        config.qsim().setStorageCapFactor(factor);
+      }
+    }catch(Exception e) {
+      LOGGER.warning("IGNORED: Simulation storage capacity factor is not a valid floating point value");
+    }        
+    LOGGER.info(String.format("[SETTING] MATSim storage capacity factor: %.2f", factor));    
+  }
+
+  /** Configure the flow capacity factor to apply to all links in simulation
+   * 
+   * @param config to use
+   * @param keyValueMap to extract value from
+   */  
+  private static void configureFlowCapacityFactor(Config config, Map<String, String> keyValueMap) {
+    double factor = 1;
+    try {
+      String flowCapacityFactor = keyValueMap.get(CAPACITY_FLOW_FACTOR_KEY);
+      if(flowCapacityFactor != null) {
+        factor = Double.parseDouble(flowCapacityFactor);
+        config.qsim().setFlowCapFactor(factor);
+      }
+    }catch(Exception e) {
+      LOGGER.warning("IGNORED: Simulation flow capacity factor is not a valid floating point value");
+    }  
+    LOGGER.info(String.format("[SETTING] MATSim flow capacity factor: %.2f", factor));        
+  }
 
   /** Configure the maximum number of iterations of the simulation. If not set we use the default DEFAULT_ITERATIONS_MAX.
    * 
@@ -309,6 +389,7 @@ public class PlanitAurinMatsimHelper {
       iterationsMax = Integer.parseInt(iterationsMaxValue);  
     }
            
+    LOGGER.info(String.format("[SETTING] MATSim max iterations: %s", iterationsMaxValue));        
     config.controler().setLastIteration(iterationsMax);    
   }
 
@@ -333,6 +414,7 @@ public class PlanitAurinMatsimHelper {
     }
     
     /* merge two config files assuming the activity config file ONLY contains the activity configuration portion */
+    LOGGER.info(String.format("[SETTING] MATSim activity config settings: %s", activityConfigValue));        
     ConfigUtils.loadConfig(config, activityConfigValue);
   }
 
@@ -340,7 +422,7 @@ public class PlanitAurinMatsimHelper {
    * Create the default configuration for a car only simulation based on this wrapper's default config
    * file.
    */
-  private static Config createDefaultCarconfiguration() {
+  private static Config createDefaultCarConfiguration() {
     Config config = ConfigUtils.createConfig();
     URL baseConfigUrl = ResourceUtils.getResourceUrl(DEFAULT_CAR_CONFIG_RESOURCE);    
     ConfigUtils.loadConfig(config, baseConfigUrl.getPath());
@@ -399,7 +481,11 @@ public class PlanitAurinMatsimHelper {
       return null;
     }
     
-    return keyValueMap.get(CONFIG_KEY);    
+    String configFileLocation = keyValueMap.get(CONFIG_KEY);
+    if(!StringUtils.isNullOrBlank(configFileLocation)) {    
+      LOGGER.info(String.format("[SETTING] MATSim config file location : %s", configFileLocation));        
+    }
+    return configFileLocation;    
   }
 
   /** Collect the location of an additional config file which overrides the base config file for the available contents
@@ -412,8 +498,12 @@ public class PlanitAurinMatsimHelper {
       LOGGER.warning("Cannot extract override config file locations when simulation is not properly config file based");
       return null;
     }
-    
-    return keyValueMap.get(OVERRIDE_CONFIG_KEY); 
+
+    String overrideConfigFileLocation = keyValueMap.get(OVERRIDE_CONFIG_KEY);
+    if(!StringUtils.isNullOrBlank(overrideConfigFileLocation)) {
+      LOGGER.info(String.format("[SETTING] MATSim additional config file location : %s", overrideConfigFileLocation));        
+    }
+    return keyValueMap.get(overrideConfigFileLocation); 
   }
 
   /** The output directory to use. If not configure the default is provided which is the working directory of the application
@@ -424,12 +514,15 @@ public class PlanitAurinMatsimHelper {
   public static Path parseOutputDirectory(final Map<String, String> keyValueMap) throws PlanItException {
     PlanItException.throwIfNull(keyValueMap, "Configuration information null");
     
+    Path outputDir = null;
     if(keyValueMap.containsKey(OUTPUT_KEY)) {
-      return Paths.get(keyValueMap.get(OUTPUT_KEY));  
+      outputDir = Paths.get(keyValueMap.get(OUTPUT_KEY));  
     }else {
-     return DEFAULT_OUTPUT_PATH; 
+      outputDir =DEFAULT_OUTPUT_PATH; 
     }
     
+    LOGGER.info(String.format("[SETTING] MATSim output directory : %s", outputDir.toString()));        
+    return outputDir;
   }
 
 
@@ -439,7 +532,7 @@ public class PlanitAurinMatsimHelper {
    * @return created MATSim config instance
    */  
   public static Config createConfigurationFromCommandLine(final Map<String, String> keyValueMap) {
-    Config config = createDefaultCarconfiguration();
+    Config config = createDefaultCarConfiguration();
     
     /* do this first to ensure that other options are not overwritten by this additional config file in case
      * the user includes more than just the activity configuration portion */
@@ -450,9 +543,11 @@ public class PlanitAurinMatsimHelper {
     PlanitAurinMatsimHelper.configureNetwork(config,keyValueMap);
     PlanitAurinMatsimHelper.configureNetworkCrs(config,keyValueMap);
     PlanitAurinMatsimHelper.configurePlans(config,keyValueMap);
-    PlanitAurinMatsimHelper.configurePlansCrs(config,keyValueMap);
+    PlanitAurinMatsimHelper.configurePlansCrs(config,keyValueMap);  
     PlanitAurinMatsimHelper.configureStartTime(config,keyValueMap);
     PlanitAurinMatsimHelper.configureEndTime(config,keyValueMap);
+    PlanitAurinMatsimHelper.configureFlowCapacityFactor(config,keyValueMap);
+    PlanitAurinMatsimHelper.configureStorageCapacityFactor(config,keyValueMap);
     PlanitAurinMatsimHelper.configureIterationsMax(config,keyValueMap);
     
     return config;
@@ -473,4 +568,53 @@ public class PlanitAurinMatsimHelper {
     }
     return config;
   }
+
+  /** Verify if population (plans) is to be down sampled
+   * 
+   * @param keyValueMap to check for
+   * @return true when down sampling is enable, false otherwise
+   */
+  public static boolean isPopulationPlansDownSampled(Map<String, String> keyValueMap) {
+    if(!keyValueMap.containsKey(PLANS_SAMPLE_KEY)) {
+      return false;
+    }
+    
+    try {
+      double downSamplingFactor = Double.parseDouble(keyValueMap.get(PLANS_SAMPLE_KEY));
+      if(downSamplingFactor>1) {
+        LOGGER.warning("IGNORED: Plans down sampling percentage is larger than 1, should be between 0 and 1");  
+      }
+      return (downSamplingFactor + Precision.EPSILON_3) < 1;
+    }catch(Exception e) {
+      LOGGER.warning("IGNORED: Plans down sampling percentage is not a valid floating point value");
+      return false;
+    }
+  }
+  
+  /** A plans or populations file cannot be downsampled on the fly and conduct a simulation. Therefore it is created
+   * separately via this method based on the original plans file from the command line arguments and the provided output 
+   * directory to store it in. The original plans file name is supplemented with the sample size of the new population to create
+   * the new file name 
+   * 
+   * @param keyValueMap
+   * @param outputDir
+   * @return path to down sampled plans file
+   */
+  public static Path createDownSampledPopulation(Map<String, String> keyValueMap, Path outputDir) {
+    if(PlanitAurinMatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
+      Path originalPlanFileLocationAsPath = extractPlansFileLocation(keyValueMap);
+      double sampleSize = Double.parseDouble(keyValueMap.get(PLANS_SAMPLE_KEY));
+      Population population = PopulationUtils.readPopulation(originalPlanFileLocationAsPath.toAbsolutePath().toString());
+
+      PopulationUtils.sampleDown(population, sampleSize);
+      
+      String[] originalPlansFileName = originalPlanFileLocationAsPath.subpath(originalPlanFileLocationAsPath.getNameCount()-1, originalPlanFileLocationAsPath.getNameCount()).toString().split(".");
+      Path updatedPlansFileLocationAsPath = Path.of(outputDir.toAbsolutePath().toString(), originalPlansFileName[0],String.format("_sample_%.4f", sampleSize),originalPlansFileName[1]);
+      PopulationUtils.writePopulation(population, updatedPlansFileLocationAsPath.toAbsolutePath().toString());
+      
+      LOGGER.info(String.format("[Downsampled MATSim plans file %s by factor %.4f",originalPlanFileLocationAsPath.toString(), sampleSize)); 
+      return updatedPlansFileLocationAsPath;
+    }
+    return null;
+  }  
 }
