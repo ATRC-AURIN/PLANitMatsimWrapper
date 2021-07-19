@@ -1,9 +1,12 @@
 package org.planit.aurin.matsim;
 
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 import org.matsim.api.core.v01.population.Population;
@@ -28,10 +31,10 @@ public class PlanitAurinMatsimHelper {
   private static final Logger LOGGER = Logger.getLogger(PlanitAurinMatsimHelper.class.getCanonicalName());
   
   /** Path from which application was invoked */
-  public static final Path CURRENT_PATH = Path.of("");
+  public static final Path CURRENT_PATH = Path.of(".");
   
   /** the resource file reflecting the base car only configuration for a MATSim run */
-  public static final String DEFAULT_CAR_CONFIG_RESOURCE = "baseconfig_car.xml";
+  public static final String DEFAULT_CAR_CONFIG_RESOURCE = "./baseconfig_car.xml";
   
   /** the default name for a MATSim configuration file*/
   public static final String DEFAULT_MATSIM_CONFIG_FILE = "config.xml";  
@@ -87,8 +90,8 @@ public class PlanitAurinMatsimHelper {
   //-------- CRS -------------------------------------
   //----------------------------------------------------  
   
-  /** the string representation used in MATSim for the default CRS Atlantis */
-  protected static String MATSIM_DEFAULT_GLOBAL_CRS = "Atlantis";
+  /** the string representation used in MATSim to convert all geo locations to in the output (when not set by the user). Default is WGS84*/
+  protected static String MATSIM_DEFAULT_GLOBAL_CRS = "EPSG:4326";
   
   /** Key reflecting the CRS to use in simulation */
   public static final String CRS_KEY = "crs";  
@@ -421,11 +424,17 @@ public class PlanitAurinMatsimHelper {
   /**
    * Create the default configuration for a car only simulation based on this wrapper's default config
    * file.
+   * 
+   * @throws URISyntaxException when invalid URI 
+   * @throws PlanItException when default config cannot be located
    */
-  private static Config createDefaultCarConfiguration() {
+  private static Config createDefaultCarConfiguration() throws URISyntaxException, PlanItException {
     Config config = ConfigUtils.createConfig();
-    URL baseConfigUrl = ResourceUtils.getResourceUrl(DEFAULT_CAR_CONFIG_RESOURCE);    
-    ConfigUtils.loadConfig(config, baseConfigUrl.getPath());
+    URI baseConfigUri = ResourceUtils.getResourceUri(DEFAULT_CAR_CONFIG_RESOURCE);    
+    if(Files.notExists(Path.of(baseConfigUri))) {
+      throw new PlanItException("Baseline default MATSim car configuration files %s, not found",DEFAULT_CAR_CONFIG_RESOURCE);
+    }
+    ConfigUtils.loadConfig(config, Path.of(baseConfigUri).toAbsolutePath().toString());
     return config;
   }
 
@@ -529,10 +538,17 @@ public class PlanitAurinMatsimHelper {
   /** Generate a MATSim configuration in memory based on command line arguments. 
    * 
    * @param keyValueMap to extract command line arguments from
-   * @return created MATSim config instance
+   * @return created MATSim config instance, null if unable to create
    */  
-  public static Config createConfigurationFromCommandLine(final Map<String, String> keyValueMap) {
-    Config config = createDefaultCarConfiguration();
+  public static Optional<Config> createConfigurationFromCommandLine(final Map<String, String> keyValueMap) {
+    Config config = null;
+    try {
+      config = createDefaultCarConfiguration();
+    }catch(Exception e) {
+      LOGGER.severe(e.getMessage());
+      LOGGER.severe("Unable to create default MATSim car configuration file to supplement with command line arguments ");
+      return Optional.empty();
+    }
     
     /* do this first to ensure that other options are not overwritten by this additional config file in case
      * the user includes more than just the activity configuration portion */
@@ -550,7 +566,7 @@ public class PlanitAurinMatsimHelper {
     PlanitAurinMatsimHelper.configureStorageCapacityFactor(config,keyValueMap);
     PlanitAurinMatsimHelper.configureIterationsMax(config,keyValueMap);
     
-    return config;
+    return Optional.of(config);
   }  
   
   /** Generate a MATSim configuration in memory based on config file(s). 
@@ -559,14 +575,14 @@ public class PlanitAurinMatsimHelper {
    * @param overrideFiles locations to parse additional config files from to override base config file
    * @return created MATSim config instance
    */  
-  public static Config createConfigurationFromFiles(final String configFile, final String... overrideFiles) {  
+  public static Optional<Config> createConfigurationFromFiles(final String configFile, final String... overrideFiles) {  
     Config config = ConfigUtils.loadConfig(configFile);
     if(overrideFiles!=null) {
       for(int index=0;index<overrideFiles.length;++index) {
         ConfigUtils.loadConfig(config, overrideFiles[index]);
       }
     }
-    return config;
+    return Optional.of(config);
   }
 
   /** Verify if population (plans) is to be down sampled

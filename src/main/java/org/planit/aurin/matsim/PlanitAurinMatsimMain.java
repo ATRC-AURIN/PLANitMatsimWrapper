@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 import org.matsim.api.core.v01.Scenario;
@@ -42,18 +43,18 @@ import org.planit.utils.exceptions.PlanItException;
  * 
  * <ul>
  * <li>--modes              indicates the mode support, options {@code car_sim (default), car_sim_pt_teleport, car_pt_sim}</li>
- * <li>--crs                indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234</li>
+ * <li>--crs                indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234. Default: WGS84 (EPSG:4326)</li>
  * <li>--network            path to the network file, when absent network is assumed in the cwd under "./network.xml"</li>
  * <li>--network_crs        coordinate reference system of the network file, e.g. EPSG:1234, when absent it is used as is in MATSim</li>
  * <li>--plans              path to the activities file, when absent plans are assumed in the cwd under "./plans.xml"</li>
  * <li>--plans_crs          coordinate reference system of the plans file, e.g. EPSG:1234, when absent it is used as is in MATSim</li>
- * <li>--plans_sample       Sample percentage (between 0 and 1) of the population plans applied in simulation, when absent full sample is used. When in config mode, downsampled plan is persisted as well</li>
+ * <li>--plans_sample       Sample percentage (between 0 and 1) of the population plans applied in simulation. Default:1. When in config mode, downsampled plan is persisted as well</li>
  * <li>--activity_config    path to activity config file defining activity types portion in MATSim config file format (plancalcscore section only) compatible with the plans file</li>
- * <li>--starttime          start time of the simulation in "hh:mm:ss" format, ignore activities in the plans file before this time</li>
- * <li>--endtime            end time of the simulation in "hh:mm:ss" format, ignore activities in the plans file after this time</li>
+ * <li>--starttime          start time of the simulation in "hh:mm:ss" format, ignore activities in the plans file before this time. Default:00:00:00</li>
+ * <li>--endtime            end time of the simulation in "hh:mm:ss" format, ignore activities in the plans file after this time. Default:00:00:00</li>
  * <li>--flowcap_factor     scale link flow capacity (between 0 and 1). Use icw down sampling of population plans to remain consistent. Default: 1
  * <li>--storagecap_factor  scale link storage capacity (between 0 and 1). Use icw down sampling of population plans to remain consistent. Default: 1
- * <li>--iterations_max     maximum number of iterations the simulation will run before terminating </li>
+ * <li>--iterations_max     maximum number of iterations the simulation will run before terminating. Mandatory,no default </li>
  * </ul> 
  * <p>
  * The {@code --modes} option defines what modes are simulated (car only, or car and pt) and how they are simulated. Currently only cars can be simulated, i.e., 
@@ -109,15 +110,14 @@ public class PlanitAurinMatsimMain {
     }
     
     /* simulation is using MATSim config files to configure everything or use command line arguments instead */
-    Config config = null;
+    Optional<Config> config = null;      
     if(PlanitAurinMatsimHelper.isSimulationConfigurationFileBased(keyValueMap)) {
       config = PlanitAurinMatsimHelper.createConfigurationFromFiles(
           PlanitAurinMatsimHelper.getConfigFileLocation(keyValueMap), PlanitAurinMatsimHelper.getOverrideConfigFileLocation(keyValueMap));
     }else {
-      config = PlanitAurinMatsimHelper.createConfigurationFromCommandLine(keyValueMap);
-    }
-    
-    runSimulation(config);    
+        config = PlanitAurinMatsimHelper.createConfigurationFromCommandLine(keyValueMap);
+    }  
+    config.ifPresentOrElse((theConfig) -> runSimulation(theConfig), () -> LOGGER.severe("Unable to run MATSim simulation, configuration not available"));        
   }
 
   /** Conduct a MATSim simulation based on the provided configuration.
@@ -136,8 +136,9 @@ public class PlanitAurinMatsimMain {
    * 
    * @param keyValueMap to use
    * @param outputDir to use, use default if null
+   * @throws PlanItException thrown if unsuccessful
    */
-  private static void generateMatsimConfiguration(final Map<String, String> keyValueMap, Path outputDir) {
+  private static void generateMatsimConfiguration(final Map<String, String> keyValueMap, Path outputDir) throws PlanItException {
     if(outputDir == null) {
       outputDir = PlanitAurinMatsimHelper.DEFAULT_OUTPUT_PATH;
     }
@@ -150,7 +151,7 @@ public class PlanitAurinMatsimMain {
     /* CUSTOMISED MATSIM CONFIG */
     else if(PlanitAurinMatsimHelper.TYPE_CONFIG_VALUE.equals(keyValueMap.get(PlanitAurinMatsimHelper.TYPE_KEY))) {
       
-      Config config = PlanitAurinMatsimHelper.createConfigurationFromCommandLine(keyValueMap);                      
+      Config config = PlanitAurinMatsimHelper.createConfigurationFromCommandLine(keyValueMap).orElseThrow(() -> new PlanItException("Unable to generate MATSim configuration"));                      
       new ConfigWriter(config).write(absOutputDir);
     }
     
@@ -170,6 +171,9 @@ public class PlanitAurinMatsimMain {
   public static void main(String[] args) {
     try {
       LOGGER = Logging.createLogger(PlanitAurinMatsimMain.class);
+      if(LOGGER==null) {
+        throw new PlanItException("Unable to instantiate logger using default PLANit logging.properties");
+      }
       
       Map<String, String> keyValueMap = getKeyValueMap(args);
       if (keyValueMap.containsKey(ARGUMENT_HELP)) {
@@ -180,7 +184,7 @@ public class PlanitAurinMatsimMain {
       } else {
 
         if(!keyValueMap.containsKey(PlanitAurinMatsimHelper.TYPE_KEY)) {
-          LOGGER.warning("--type missing, unable to proceed");
+          LOGGER.warning("--type argument missing, unable to proceed with MATSim simulation wrapper");
           return;
         }
         
@@ -222,8 +226,12 @@ public class PlanitAurinMatsimMain {
 
       }
     } catch (Exception e) {
-      LOGGER.severe(e.getMessage());
-      LOGGER.severe("Unable to execute MATSim simulation from PLANit AURIN wrapper, terminating");
+      if(LOGGER !=null) {
+        LOGGER.severe(e.getMessage());
+        LOGGER.severe("Unable to execute MATSim simulation from PLANit AURIN wrapper, terminating");
+      }else {
+        e.printStackTrace();
+      }
     }
 
   }
