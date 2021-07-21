@@ -15,23 +15,22 @@ import org.planit.utils.resource.ResourceUtils;
  *
  */
 public class AurinMatsimWrapperTest {
+  
+  private static final URL network = ResourceUtils.getResourceUrl("./Melbourne/car_simple_melbourne_network.xml");
+  private static final URL plans = ResourceUtils.getResourceUrl("./Melbourne/plans_victoria.xml");
+  private static final URL activity_config = ResourceUtils.getResourceUrl("./Melbourne/activity_config.xml");
 
   /**
-   * Test with local inputs via command line call
+   * Test with local inputs via command line call. Current plans file is already a sample, so no need to 
+   * down sample scale at this point
    */
   @Test
-  public void matsimSimulationTestCarOnlyTenPercent() {
+  public void matsimSimulationTestCarOnly() {
     try {
       
-      URL network = ResourceUtils.getResourceUrl("./Melbourne/car_simple_melbourne_network.xml");
-      URL plans = ResourceUtils.getResourceUrl("./Melbourne/plans_victoria.xml");
-      URL activity_config = ResourceUtils.getResourceUrl("./Melbourne/activity_config.xml");
-
-      double downSampleFactor = 0.1;
+      double downSampleFactor = 1;
       int iterationsMax = 2;
-      
-      // Run simulation with settings equivalent to an executable jar call of: 
-      // java -jar PLANitAurinMatsim.jar XXXXXXX
+        
       PlanitAurinMatsimMain.main(
           new String[]{
               "--type",
@@ -41,15 +40,15 @@ public class AurinMatsimWrapperTest {
               "--crs",
               "epsg:3112",              
               "--network",
-              UrlUtils.asLocalPath(network).toAbsolutePath().toString(),
+              UrlUtils.asLocalPath(network).toString(),
               "--network_crs",
               "epsg:3112",
               "--plans",
-              UrlUtils.asLocalPath(plans).toAbsolutePath().toString(),
+              UrlUtils.asLocalPath(plans).toString(),
               "--plans_crs",
               "epsg:28355",              
               "--activity_config",
-              UrlUtils.asLocalPath(activity_config).toAbsolutePath().toString(),
+              UrlUtils.asLocalPath(activity_config).toString(),
               "--flowcap_factor",
               String.valueOf(downSampleFactor),
               "--storagecap_factor",
@@ -60,9 +59,54 @@ public class AurinMatsimWrapperTest {
       
     } catch (Exception e) {
       e.printStackTrace();
-      fail("Error when testing Aurin MATsim simulation Wrapper");
+      fail("Error when testing Aurin MATSim simulation Wrapper - matsimSimulationTestCarOnly");
     }
   }
 
+  /**
+   * Test to generate a default (full - template based) configuration file, otherwise known as the full config in 
+   * MATSim terms
+   */
+  @Test
+  public void matsimDefaultConfigOnly() {
+    try {  
+        
+      PlanitAurinMatsimMain.main(
+          new String[]{
+              "--type",
+              "default_config"});
+      
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail("Error when testing Aurin MATSim simulation Wrapper - matsimDefaultConfigOnly");
+    }
+  }
+  
+  /**
+   * Test to generate a configuration file based on the wrapper's tailored config file and the additional command line
+   * options provided by the user (if any). The user can then make custom changes and use the config file to run a simulation
+   * via this wrapper at a later stage
+   * 
+   */
+  @Test
+  public void matsimWrapperConfigOnly() {
+    try {  
+        
+      int iterationsMax = 250;
+      
+      PlanitAurinMatsimMain.main(
+          new String[]{
+              "--type",
+              "config",
+              "--modes",
+              "car_sim",
+              "--iterations_max",
+              String.valueOf(iterationsMax)});      
+      
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail("Error when testing Aurin MATSim simulation Wrapper - matsimDefaultConfigOnly");
+    }
+  }  
 }
 

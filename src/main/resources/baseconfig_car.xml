@@ -32,7 +32,7 @@
 		<param name="writeSnapshotsInterval" value="1" />
 	</module>
 	<module name="global">
-		<param name="coordinateSystem" value="Atlantis" />
+		<param name="coordinateSystem" value="EPSG:4326" />
 		<!-- "global" number of threads. This number is used, e.g., for replanning, 
 			but NOT in the mobsim. This can typically be set to as many cores as you 
 			have available, or possibly even slightly more. -->

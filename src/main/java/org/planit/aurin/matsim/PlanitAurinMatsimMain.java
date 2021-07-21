@@ -19,7 +19,7 @@ import org.planit.utils.args.ArgumentStyle;
 import org.planit.utils.exceptions.PlanItException;
 
 /**
- * Access point for running a PLANit MATsim simulation that based on its inputs conducts a simulation run.
+ * Access point for running a PLANit MATsim simulation or generating config files to do so at a later stage via this same wrapper.
  * <p>
  * Command line options are available which should be provided such that the key is preceded with a double hyphen and the value follows directly (if any) with any number of 
  * spaces in between (no hyphens), e.g., {@code --<key> <value>}.
@@ -35,7 +35,9 @@ import org.planit.utils.exceptions.PlanItException;
  * 
  * When choosing {@code default_config} all other configuration settings are ignored except for the --output option on where to store the result, 
  * when choosing {@code config} the configurable options are included in the config file that is generated as well as the defaults that otherwise would be
- * applied by this wrapper's simulation runs (currently car only) , otherwise it is treated the same as {@code default_config}. 
+ * applied by this wrapper's simulation runs (currently car only) , otherwise it is treated the same as {@code default_config}. In other words when using default_config
+ * it provides the user with a template with all default options explicitly listed, whereas config provides the tailored configuration file used by this wrapper including 
+ * modifications made by command line options provided.
  * <p>
  * When choosing {--type @code simulation}, one can either utilise MATsim config files to configure the simulation or the exposed
  * command line configuration options. When configuring the simulation here the default simulator of MATSim is used (qsim). 
@@ -55,6 +57,7 @@ import org.planit.utils.exceptions.PlanItException;
  * <li>--flowcap_factor     scale link flow capacity (between 0 and 1). Use icw down sampling of population plans to remain consistent. Default: 1
  * <li>--storagecap_factor  scale link storage capacity (between 0 and 1). Use icw down sampling of population plans to remain consistent. Default: 1
  * <li>--iterations_max     maximum number of iterations the simulation will run before terminating. Mandatory,no default </li>
+ * <li>--output             directory where to store the generated simulation results or configuration file(s). Default: "./output" </li>
  * </ul> 
  * <p>
  * The {@code --modes} option defines what modes are simulated (car only, or car and pt) and how they are simulated. Currently only cars can be simulated, i.e., 
@@ -67,7 +70,7 @@ import org.planit.utils.exceptions.PlanItException;
  * In case the user decides not to use these shortcuts but instead prefers its own configuration file(s) that is also possible, in which case the following two commands should be used:
  *  <ul>
  *  <li>--config TODO</li>
- *  <li>--override_config TODO (can be multiple in order)</li>
+ *  <li>--override_config TODO</li>
  * </ul> 
  * 
  * We note that when the above options are used all other command line options for simulation are ignored since they custom configuration file takes precedence.
@@ -136,25 +139,26 @@ public class PlanitAurinMatsimMain {
    * 
    * @param keyValueMap to use
    * @param outputDir to use, use default if null
+   * @return location where config file has been created
    * @throws PlanItException thrown if unsuccessful
    */
-  private static void generateMatsimConfiguration(final Map<String, String> keyValueMap, Path outputDir) throws PlanItException {
+  private static String generateMatsimConfiguration(final Map<String, String> keyValueMap, Path outputDir) throws PlanItException {
     if(outputDir == null) {
       outputDir = PlanitAurinMatsimHelper.DEFAULT_OUTPUT_PATH;
     }
     
     /* DEFAULT MATSIM FULL CONFIG */
-    String absOutputDir = outputDir.toAbsolutePath().toString();
+    String outputFileLocation = Path.of(outputDir.toString(), PlanitAurinMatsimHelper.DEFAULT_MATSIM_CONFIG_FILE).normalize().toAbsolutePath().toString();
     if( PlanitAurinMatsimHelper.TYPE_DEFAULT_CONFIG_VALUE.equals(keyValueMap.get(PlanitAurinMatsimHelper.TYPE_KEY))){
-      org.matsim.run.CreateFullConfig.main(new String[] {absOutputDir});
+      org.matsim.run.CreateFullConfig.main(new String[] {outputFileLocation});
     }
     /* CUSTOMISED MATSIM CONFIG */
     else if(PlanitAurinMatsimHelper.TYPE_CONFIG_VALUE.equals(keyValueMap.get(PlanitAurinMatsimHelper.TYPE_KEY))) {
       
       Config config = PlanitAurinMatsimHelper.createConfigurationFromCommandLine(keyValueMap).orElseThrow(() -> new PlanItException("Unable to generate MATSim configuration"));                      
-      new ConfigWriter(config).write(absOutputDir);
+      new ConfigWriter(config).write(outputFileLocation);
     }
-    
+    return outputFileLocation;
   }
 
   /** Path from which application was invoked */
@@ -203,8 +207,8 @@ public class PlanitAurinMatsimMain {
         /* TYPE: CONFIGURATION ONLY */ 
         if(PlanitAurinMatsimHelper.isConfigurationType(keyValueMap)) {
           
-          generateMatsimConfiguration(keyValueMap, outputDir);
-          LOGGER.info(String.format("Generated MATSim configuration file: %s",Path.of(outputDir.toString(),PlanitAurinMatsimHelper.DEFAULT_MATSIM_CONFIG_FILE).toString()));
+          final String outputFileLocation = generateMatsimConfiguration(keyValueMap, outputDir);
+          LOGGER.info(String.format("Generated MATSim configuration file: %s",outputFileLocation));
           if(PlanitAurinMatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
             LOGGER.info(String.format("Generated downsampled MATSim plans file: %s",keyValueMap.get(PlanitAurinMatsimHelper.PLANS_KEY))); 
           }

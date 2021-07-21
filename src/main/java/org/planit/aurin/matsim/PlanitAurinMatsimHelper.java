@@ -31,7 +31,7 @@ public class PlanitAurinMatsimHelper {
   private static final Logger LOGGER = Logger.getLogger(PlanitAurinMatsimHelper.class.getCanonicalName());
   
   /** Path from which application was invoked */
-  public static final Path CURRENT_PATH = Path.of(".");
+  public static final Path CURRENT_PATH = Path.of(".").toAbsolutePath();
   
   /** the resource file reflecting the base car only configuration for a MATSim run */
   public static final String DEFAULT_CAR_CONFIG_RESOURCE = "./baseconfig_car.xml";
@@ -47,7 +47,7 @@ public class PlanitAurinMatsimHelper {
   public static final String OUTPUT_KEY = "output";
   
   /** Output path defaults to directory where this application was run from */
-  public static final Path DEFAULT_OUTPUT_PATH = CURRENT_PATH;  
+  public static final Path DEFAULT_OUTPUT_PATH = Path.of(CURRENT_PATH.toString(),"output");  
   
   //----------------------------------------------------
   //-------- TYPE --------------------------------------
@@ -160,7 +160,7 @@ public class PlanitAurinMatsimHelper {
   
   //----------------------------------------------------
   //-------- CONFIG ------------------------------------
-  //----------------------------------------------------  
+  //---------------------------------------------------- 
     
   /** Key reflecting the MATSim config file location in case simulation is run based on a file */
   public static final String CONFIG_KEY = "config";
@@ -186,9 +186,9 @@ public class PlanitAurinMatsimHelper {
   private static Path extractPlansFileLocation(Map<String, String> keyValueMap) {
     String planFileLocation = keyValueMap.get(PLANS_KEY);     
     if(StringUtils.isNullOrBlank(planFileLocation)) {
-      planFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_PLANS).toAbsolutePath().toString();
+      planFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_PLANS).toString();
     }      
-    return Paths.get(planFileLocation);
+    return Paths.get(planFileLocation).normalize();
   }
 
   /** Configure the available modes in the simulation based on command line arguments provided
@@ -242,13 +242,13 @@ public class PlanitAurinMatsimHelper {
       
       Path networkFileLocationAsPath = null;      
       if(StringUtils.isNullOrBlank(networkFileLocation)) {
-        networkFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_NETWORK).toAbsolutePath().toString();
+        networkFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_NETWORK).toString();
       }      
-      networkFileLocationAsPath = Paths.get(networkFileLocation);
+      networkFileLocationAsPath = Paths.get(networkFileLocation).normalize();
       
       /* set network path location */
       LOGGER.info(String.format("[SETTING] MATSim network file: %s", networkFileLocationAsPath.toString()));
-      config.network().setInputFile(networkFileLocationAsPath.toAbsolutePath().toString());
+      config.network().setInputFile(networkFileLocationAsPath.toString());
       
     }catch (Exception e) {
       LOGGER.warning(String.format("Invalid network file location %s for --network, ignored", networkFileLocation));
@@ -285,7 +285,7 @@ public class PlanitAurinMatsimHelper {
       
       /* set plans path location */
       LOGGER.info(String.format("[SETTING] MATSim plans/population file: %s", planFileLocationAsPath.toString()));
-      config.plans().setInputFile(planFileLocationAsPath.toAbsolutePath().toString());
+      config.plans().setInputFile(planFileLocationAsPath.toString());
       
     }catch (Exception e) {
       LOGGER.warning(String.format("Invalid plans file location %s for --plans, ignored", planFileLocation));
@@ -530,6 +530,7 @@ public class PlanitAurinMatsimHelper {
       outputDir =DEFAULT_OUTPUT_PATH; 
     }
     
+    outputDir.normalize();
     LOGGER.info(String.format("[SETTING] MATSim output directory : %s", outputDir.toString()));        
     return outputDir;
   }
