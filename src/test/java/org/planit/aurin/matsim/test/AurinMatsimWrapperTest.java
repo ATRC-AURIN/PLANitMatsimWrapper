@@ -2,9 +2,13 @@ package org.planit.aurin.matsim.test;
 
 import static org.junit.Assert.fail;
 
+import java.io.File;
 import java.net.URL;
+
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.planit.aurin.matsim.PlanitAurinMatsimMain;
+import org.planit.utils.misc.FileUtils;
 import org.planit.utils.misc.UrlUtils;
 import org.planit.utils.resource.ResourceUtils;
 
@@ -16,10 +20,21 @@ import org.planit.utils.resource.ResourceUtils;
  */
 public class AurinMatsimWrapperTest {
   
-  private static final URL network = ResourceUtils.getResourceUrl("./Melbourne/car_simple_melbourne_network.xml");
+  private static final URL network = ResourceUtils.getResourceUrl("./Melbourne/car_simple_melbourne_network_cleaned.xml");
   private static final URL plans = ResourceUtils.getResourceUrl("./Melbourne/plans_victoria.xml");
   private static final URL activity_config = ResourceUtils.getResourceUrl("./Melbourne/activity_config.xml");
+  
+  private static final File MATSIM_TMP_DIR = new File("./output/tmp");
 
+  /**
+   * Ensure that generated output files in tmp dir are cleaned up by deleting dirs and content because otherwise
+   * we get errors dir could not be created for some reason
+   */
+  @AfterClass
+  public static void afterClass(){
+    FileUtils.deleteDirectory(MATSIM_TMP_DIR);
+  }
+  
   /**
    * Test with local inputs via command line call. Current plans file is already a sample, so no need to 
    * down sample scale at this point
@@ -46,7 +61,7 @@ public class AurinMatsimWrapperTest {
               "--plans",
               UrlUtils.asLocalPath(plans).toString(),
               "--plans_crs",
-              "epsg:28355",              
+              "epsg:3112",              
               "--activity_config",
               UrlUtils.asLocalPath(activity_config).toString(),
               "--flowcap_factor",

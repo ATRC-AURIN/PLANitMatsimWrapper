@@ -101,13 +101,26 @@ public class PlanitAurinMatsimHelper {
   //----------------------------------------------------  
   
   /** the default network file name in MATSim*/
-  protected static String MATSIM_DEFAULT_NETWORK = "network.xml";
+  protected static String MATSIM_DEFAULT_NETWORK = "network.xml";  
   
   /** Key reflecting the network file location */
   public static final String NETWORK_KEY = "network";
   
   /** Key reflecting the network crs */
-  public static final String NETWORK_CRS_KEY = "network_crs";    
+  public static final String NETWORK_CRS_KEY = "network_crs";
+  
+  /** Key reflecting the network crs */
+  public static final String NETWORK_CLEAN_KEY = "network_clean";
+  
+  /** value indicating we should not clean the network */
+  public static final String NETWORK_CLEAN_NO_VALUE = "no";
+  
+  /** value indicating we should clean the network */
+  public static final String NETWORK_CLEAN_YES_VALUE = "yes";
+  
+  /** the default setting for cleaning the network on the fly (no). It is disabled because
+   * we assume this has been done during parsing already */
+  protected static String DEFAULT_NETWORK_CLEAN = NETWORK_CLEAN_NO_VALUE;  
   
   //----------------------------------------------------
   //-------- PLANS --------------------------------------
@@ -169,7 +182,7 @@ public class PlanitAurinMatsimHelper {
   public static final String OVERRIDE_CONFIG_KEY = "override_config";   
   
   //----------------------------------------------------
-  //-------- CAPACITY ---------------------------
+  //-------- CAPACITY ----------------------------------
   //----------------------------------------------------  
     
   /** Key reflecting the factor to apply to all link flow capacities in simulation */
@@ -409,11 +422,12 @@ public class PlanitAurinMatsimHelper {
   private static void configureActivityConfig(final Config config, final Map<String, String> keyValueMap) {
     String activityConfigValue = keyValueMap.get(ACTIVITY_CONFIG_KEY);
     if(StringUtils.isNullOrBlank(activityConfigValue )) {
-      LOGGER.warning(String.format("Missing activity configuration file (--%s), invalid simulation run",ACTIVITY_CONFIG_KEY));
+      LOGGER.warning(String.format("Missing activity configuration file (--%s)",ACTIVITY_CONFIG_KEY));
       return;
     }
     if(!Paths.get(activityConfigValue).toFile().exists()) {
-      LOGGER.warning(String.format("Provided activity configuration file (--%s) not available, invalid simulation run",ACTIVITY_CONFIG_KEY));
+      LOGGER.warning(String.format("Activity configuration file (--%s) not available",ACTIVITY_CONFIG_KEY));
+      return;
     }
     
     /* merge two config files assuming the activity config file ONLY contains the activity configuration portion */
@@ -477,6 +491,31 @@ public class PlanitAurinMatsimHelper {
         return false;
     }
   }   
+  
+  /** Check if the user wants the in-memory MATSim network to be cleaned before conducting the simulation
+   * 
+   * @param keyValueMap to check
+   * @return true when so, false otherwise 
+   */
+  public static boolean isNetworkCleanActivated(final Map<String, String> keyValueMap) {
+    String cleanFlag = keyValueMap.get(NETWORK_CLEAN_KEY);
+    if(cleanFlag==null) {
+      cleanFlag = DEFAULT_NETWORK_CLEAN;
+    }
+    
+    switch (cleanFlag) {
+      case NETWORK_CLEAN_NO_VALUE:
+        LOGGER.info(String.format("[SETTING] MATSim clean network: %s", NETWORK_CLEAN_NO_VALUE));
+        return false;        
+      case NETWORK_CLEAN_YES_VALUE:
+        LOGGER.info(String.format("[SETTING] MATSim clean network: %s", NETWORK_CLEAN_YES_VALUE));
+        return true;        
+      default:
+        LOGGER.warning(String.format("Invalid value for --%s switch",NETWORK_CLEAN_KEY));
+        LOGGER.info(String.format("[SETTING] MATSim clean network: %s", NETWORK_CLEAN_NO_VALUE));
+        return false;
+    }
+  }
    
 
   /** Collect the location of the config file from the command line arguments (if any)
