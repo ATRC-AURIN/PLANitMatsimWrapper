@@ -551,7 +551,7 @@ public class PlanitAurinMatsimHelper {
     if(!StringUtils.isNullOrBlank(overrideConfigFileLocation)) {
       LOGGER.info(String.format("[SETTING] MATSim additional config file location : %s", overrideConfigFileLocation));        
     }
-    return keyValueMap.get(overrideConfigFileLocation); 
+    return overrideConfigFileLocation; 
   }
 
   /** The output directory to use. If not configure the default is provided which is the working directory of the application
@@ -566,10 +566,10 @@ public class PlanitAurinMatsimHelper {
     if(keyValueMap.containsKey(OUTPUT_KEY)) {
       outputDir = Paths.get(keyValueMap.get(OUTPUT_KEY));  
     }else {
-      outputDir =DEFAULT_OUTPUT_PATH; 
+      outputDir = DEFAULT_OUTPUT_PATH; 
     }
     
-    outputDir.normalize();
+    outputDir = outputDir.normalize();
     LOGGER.info(String.format("[SETTING] MATSim output directory : %s", outputDir.toString()));        
     return outputDir;
   }

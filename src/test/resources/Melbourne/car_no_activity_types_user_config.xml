@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE config SYSTEM "http://www.matsim.org/files/dtd/config_v2.dtd">
+<config>
+  <module name="network">
+    <param name="inputNetworkFile" value="./car_simple_melbourne_network_cleaned.xml" />
+  </module>
+  <module name="plans">
+    <param name="inputPlansFile" value="./plans_victoria.xml" />
+  </module>
+	<module name="controler">
+		<param name="createGraphs" value="false" />
+		<param name="dumpDataAtEnd" value="false" />
+		<param name="mobsim" value="qsim" />
+		<param name="outputDirectory" value="./output" />
+		<param name="overwriteFiles" value="deleteDirectoryIfExists" />
+		<param name="writeEventsInterval" value="10" />
+		<param name="writePlansInterval" value="10" />
+		<param name="writeSnapshotsInterval" value="1" />
+		<!-- single iteration -->
+		<param name="lastIteration" value="0" />
+	</module>
+	<module name="global">
+		<param name="coordinateSystem" value="epsg:3112" />
+		<param name="numberOfThreads" value="4" />
+	</module>
+	<module name="linkStats">
+		<param name="averageLinkStatsOverIterations" value="5" />
+		<param name="writeLinkStatsInterval" value="10" />
+	</module>
+	<module name="planscalcroute">
+		<param name="networkModes" value="car" />
+	</module>
+	<module name="qsim">
+		<param name="linkDynamics" value="FIFO" />
+		<param name="linkWidth" value="30.0" />
+		<param name="mainMode" value="car" />
+		<param name="numberOfThreads" value="4" />
+		<param name="timeStepSize" value="00:00:01" />
+		<param name="trafficDynamics" value="queue" />
+		<param name="useLanes" value="false" />
+		<param name="vehicleBehavior" value="teleport" />
+		<param name="vehiclesSource" value="defaultVehicle" />
+	</module>
+	<module name="strategy">
+		<parameterset type="strategysettings">
+			<param name="strategyName" value="ReRoute" />
+			<param name="weight" value="0.2" />
+		</parameterset>
+		<parameterset type="strategysettings">
+			<param name="strategyName" value="TimeAllocationMutator" />
+			<param name="weight" value="0.1" />
+		</parameterset>
+		<parameterset type="strategysettings">
+			<param name="strategyName" value="SelectExpBeta" />
+			<param name="weight" value="0.7" />
+		</parameterset>
+	</module>
+	<module name="travelTimeCalculator">
+		<param name="analyzedModes" value="car" />
+		<param name="calculateLinkToLinkTravelTimes" value="false" />
+		<param name="calculateLinkTravelTimes" value="true" />
+		<param name="maxTime" value="108000" />
+		<param name="travelTimeAggregator" value="optimistic" />
+		<param name="travelTimeBinSize" value="900" />
+		<param name="travelTimeGetter" value="average" />
+	</module>
+</config>

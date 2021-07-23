@@ -70,8 +70,8 @@ import org.planit.utils.exceptions.PlanItException;
  * <p>
  * In case the user decides not to use these shortcuts but instead prefers its own configuration file(s) that is also possible, in which case the following two commands should be used:
  *  <ul>
- *  <li>--config TODO</li>
- *  <li>--override_config TODO</li>
+ *  <li>--config          Format: \<path\> to config file to use. Default: none. This configuration should ideally be complete unless the--override_config is also used.</li>
+ *  <li>--override_config Format: \<path\> to additional config file. Default: none. Options in this configuration override or supplement the ones in the --config one. Optional</li>
  * </ul> 
  * 
  * We note that when the above options are used all other command line options for simulation are ignored since they custom configuration file takes precedence.

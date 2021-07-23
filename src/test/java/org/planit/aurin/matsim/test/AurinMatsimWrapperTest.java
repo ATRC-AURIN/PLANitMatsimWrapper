@@ -13,7 +13,9 @@ import org.planit.utils.misc.UrlUtils;
 import org.planit.utils.resource.ResourceUtils;
 
 /**
- * Test the PLANit MATSim simulation Wrapper for the AURIN platform
+ * Test the PLANit MATSim simulation Wrapper for the AURIN platform.
+ * 
+ * TODO: add tests where we actively downsample to see if this works + if it generates a downsamples activity plans file as expected
  * 
  * @author markr
  *
@@ -23,6 +25,7 @@ public class AurinMatsimWrapperTest {
   private static final URL network = ResourceUtils.getResourceUrl("./Melbourne/car_simple_melbourne_network_cleaned.xml");
   private static final URL plans = ResourceUtils.getResourceUrl("./Melbourne/plans_victoria.xml");
   private static final URL activity_config = ResourceUtils.getResourceUrl("./Melbourne/activity_config.xml");
+  private static final URL EXAMPLE_USER_CONFIG_NO_ACTIVITY_TYPES = ResourceUtils.getResourceUrl("./Melbourne/car_no_activity_types_user_config.xml");;
   
   private static final File MATSIM_TMP_DIR = new File("./output/tmp");
 
@@ -40,7 +43,7 @@ public class AurinMatsimWrapperTest {
    * down sample scale at this point
    */
   @Test
-  public void matsimSimulationTestCarOnly() {
+  public void matsimSimulationCarOnlyCommandLine() {
     try {
       
       double downSampleFactor = 1;
@@ -77,6 +80,32 @@ public class AurinMatsimWrapperTest {
       fail("Error when testing Aurin MATSim simulation Wrapper - matsimSimulationTestCarOnly");
     }
   }
+  
+  /**
+   * Test simulation run with inputs based on configuration  and override configuration file.Allows users
+   * to configure their simulation as they see fit, but no checks are performed on correctness. So if it is
+   * somehow incorrect the simulation will fail.
+   */
+  @Test
+  public void matsimSimulationCarOnlyConfig() {
+    try {
+                    
+      /** use car template configuration with additionally defined locations for inputs + supplement with activity configuration **/
+      PlanitAurinMatsimMain.main(
+          new String[]{
+              "--type",
+              "simulation",
+              "--config",
+              UrlUtils.asLocalPath(EXAMPLE_USER_CONFIG_NO_ACTIVITY_TYPES).toString(),
+              "--override_config",
+              UrlUtils.asLocalPath(activity_config).toString()});     
+      
+      
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail("Error when testing Aurin MATSim simulation Wrapper - matsimSimulationTestCarOnly");
+    }
+  }  
 
   /**
    * Test to generate a default (full - template based) configuration file, otherwise known as the full config in 
