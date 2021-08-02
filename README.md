@@ -1,6 +1,6 @@
 # PLANitOsmMatsimWrapper
 
-Wrapper for Aurin services to access exposed functionality of PLANit MATsim simulations. 
+Wrapper for Aurin services to access exposed functionality of PLANit MATSim simulations.
 
 The purpose of this wrapper is twofold:
 
@@ -9,21 +9,81 @@ The purpose of this wrapper is twofold:
 
 To service both needs this wrapper exposes two main features:
 
-* Possibility to generate a MATSim configuration file
-** based on the wrapper's predefined settings
-** based on MATSim default settings (full config generator)
-* Possibility to run a MATSim simulation 
-** based on wrapper's predefined settings without a MATSim config file
-** based on user provided MATSim config file
+* Generate MATSim configuration files
+    * based on the wrapper's predefined settings
+    * based on MATSim default settings (full config generator)
+* Run MATSim simulations 
+    * based on wrapper's predefined settings without a MATSim config file
+    * based on user provided MATSim config file
 
 This approach allows a user to not bother with dealing with any MATSim config file and instead rely on the out-of-the-box predefined settings of the wrapper, or alternatively, let the wrapper generate a config file based on its predefined settings, adjust this file to suit the user's needs, and then conduct a simulation, or provide a completely custom configuration. The latter requires the most in-depth knowledge of MATSim whereas the first option requires little to no knowledge of MATSim.
 
-## Maven parent
+## Getting started
+
+The simplest way to use this wrapper is to build an executable jar file by running a Maven build on pom_fat_jar_java.xml. This will
+build a jar file that can be run from the command line. Below you will find an example on how to conduct a simple simulation assuming the mentioned inputs are available and setting all options via command line switches rather than providing your own custom configuration file directly. For further examples have a look at the tests included in this repository
+
+```
+java -jar PLANitAurinMatsim.jar --type "simulation" --modes car_sim --crs "epsg:3112" --network "./Melbourne/car_simple_melbourne_network_cleaned.xml" --network_crs "epsg:3112" --plans "./Melbourne/plans_victoria.xml" --plans_crs epsg:3112 --activity_config "./Melbourne/activity_config.xml" --flowcap_factor 1 --storagecap_factor 1 --iterations_max 1
+
+```
+
+Below you will find a list of the available command line options that are currently exposed. The PLANit MATSim wrapper (and MATSim itself for that matter) has many more options than currently made available through command line options. If you wish to use those, then we suggest generating a (template based) configuration file instead (see other test examples in the repository) and adjust it to your needs. Then, use your own configuration file for running the simulation instead of using the command line switches.
+
+## Command line options
+
+The following command line options are available which should be provided such that the key is preceded with a double hyphen (--) and the value follows directly (if any) with any number of spaces in between (no hyphens), e.g., --<key> <value>:
+
+We distinguish between three key types of functionality that are exposed, namely:
+ * (i)    Run a simple MATSim simulation using basic command line options (as shown above) 
+ * (ii)    Generate a MATSim configuration file to adjust offline before using it for...
+ * (iii)    Run a MATSim simulation using custom MATSim configuration file
+ 
+ Option (ii) can be used to generate a completely vanilla config file based on MATSim's defaults, or generate one based on this wrapper's default template. The following command line switch is mandatory and is reponsible for choosing either to run a simulation ((i) or (iii)) or generate a config file ((ii)). 
+   
+  * **--type**    *Format: options: [simulation, config, default_config]*. Default: none.
+ 
+When choosing *default_config*, all other command line settings are ignored except for the --output option on where to store the result configuration file, it generates the full default based MATSim configuration file.
+
+When choosing *config*, the configurable command line options set by the user are included in the generated config file as well as the defaults that otherwise would be applied by this wrapper's simulation runs (currently car only). If no known settings is available, it generates the same setting as *default_config* would. In other words when using *default_config* it provides the user with a template with all default options explicitly listed, whereas config provides a more tailored configuration file used by this wrapper including modifications made by command line options provided.
+
+When choosing --type *simulation*, one can either decide to adopt a pre-generated MATSim config file to configure the simulation, or, alternatively use the exposed command line configuration options directly. In case a config file is used, only the following command line options are important:
+
+ *  **--config**    *Format: <path to config file>*. Default: none. This configuration file should be complete unless the *--override_config* is also used.</li>
+ * **--override_config**    *Format: <path to additional config file>.* Default: none. Options in this configuration override or supplement the ones in *--config*. Optional.
+
+ We note that when adopting a config file based simulation all other command line options (see below) are ignored since the custom configuration file takes precedence. In this case.
+
+When configuring the simulation via command line options directly, not using a custom config file, the following options are made available. In this situation, MATSim adopts its default simulator qsim. 
+ 
+ * **--modes**    *Format: options [car_sim, car_sim_pt_teleport, car_pt_sim].* Default car_sim.
+ * **--crs**      *Format: *"epsg:<xyz>"*. Default: WGS84 (EPSG:4326). Indicates the coordinate reference system to use in MATSim internally
+ * **--network**    *Format: <path to the network file>*. Default: cwd such that *"./network.xml"*
+ * **--network_crs**     *Format: "epsg:<xyz>"*. Default: unchanged. Coordinate reference system of the network file, converted to *--crs* in simulation if different
+ * **--network_clean**    *Format: options: [yes, no].* Default: no. Applies a network clean operation on memory model of network before simulating. Can be used to remove unreachable links if needed 
+ * **--plans**    *Format: <path to the activities file>*. Default: the cwd such that *"./plans.xml"*
+ * **--plans_crs**    *Format: "epsg:<xyz>*. Default: unchanged. Coordinate reference system of the plans file, converted to *--crs* in simulation if different
+ * **--plans_sample**    *Format: between 0 and 1.* Default: 1. Sample of the population plans applied in simulation. When in config mode, downsampled plan is persisted as well
+ * **--activity_config**    *Format: <path to activity config file>*. Defining activity types portion in MATSim config file format (plancalcscore section only) compatible with the plans file
+ * **--starttime**    *Format: "hh:mm:ss".* Default:00:00:00. Start time of the simulation in, ignore activities in the plans file before this time.
+ * **--endtime**    *Format: "hh:mm:ss".* Default:00:00:00. End time of the simulation in "hh:mm:ss" format, ignore activities in the plans file after this time
+ * **--flowcap_factor**    *Format:* between 0 and 1. Default 1. Scale link flow capacity. Use icw down sampling of population plans to remain consistent
+ * **--storagecap_factor*    *Format: between 0 and 1.* Default 1. Scale link storage capacity. Use icw down sampling of population plans to remain consistent
+ * **--iterations_max**    *Format: positive number.* Default: none. Maximum number of iterations the simulation will run before terminating. Mandatory
+ * **--output** *Format: <path to desired output directory>.*  Default: *"./output"*. Location to store the generated simulation results or configuration file(s)
+
+The *--modes* option defines what modes are simulated (car only, or car and pt) and how they are simulated. Currently only cars can be simulated, i.e., we only support *--modes car_sim* for now. The public transport support (both teleported and simulated is to be added at a later stage). If absent it defaults to *--modes car_sim.*
+
+The *--startttime* and *--endtime* option can be omitted in which case the entire day, i.e., all activities, will be simulated. 
+
+## General Maven build information 
+
+### Maven parent
 
 Projects need to be built from Maven before they can be run. The common maven configuration can be found in the PLANitParentPom project which acts as the parent for this project's pom.xml.
 
 > Make sure you install the PLANitParentPom pom.xml before conducting a maven build (in Eclipse) on this project, otherwise it cannot find the references dependencies, plugins, and other resources.
 
-## FAT Jar
+### FAT Jar
 
-To run the wrapper in a stand-alone fashion (not from IDE) all dependencies need to be made available within the runnable jar. To support this a separate pom.xml is provided in the project that builds such a jar.
+To run the wrapper in a stand-alone fashion (not from IDE) all dependencies need to be made available within the runnable jar. To support this a separate pom_fat_jar_java.xml is provided in the project that builds such a jar.
