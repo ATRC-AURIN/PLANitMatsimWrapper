@@ -1,0 +1,115 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.planit.parentpom</groupId>
+		<artifactId>PLANitParentPom</artifactId>
+		<version>0.2.1a1</version>
+	</parent>
+
+	<groupId>org.planit.aurin.matsim</groupId>
+	<artifactId>PLANitAurinMatsim</artifactId>
+	<description>Wrapper to only expose funcionality used by Aurin ATRC platform regarding MATSim simulation runs</description>
+	<packaging>jar</packaging>
+
+	<name>PLANitAurinMatsim</name>
+	<url>https://github.com/AURIN-OFFICE/PLANitMatsimWrapper</url>
+	
+	<properties>
+	  <matsim.version>12.0</matsim.version>
+	</properties>
+
+	<!-- license based on the one published on the website -->
+	<licenses>
+		<license>
+			<name>PLANit license based on modified BSD</name>
+			<url>${planit.website.url}/docs/licenses/LICENSE.txt</url>
+			<distribution>repo</distribution>
+			<comments>A slightly modified version of a modified BSD license</comments>
+		</license>
+	</licenses>
+
+	<!-- versions inherited from parent -->
+	<dependencies>
+	
+    <dependency>
+      <groupId>org.planit</groupId>
+      <artifactId>PLANit</artifactId>
+    </dependency>	
+
+		<dependency>
+			<groupId>org.planit.utils</groupId>
+			<artifactId>PLANitUtils</artifactId>
+		</dependency>
+		
+    <dependency>
+      <groupId>org.matsim</groupId>
+      <artifactId>matsim</artifactId>
+      <version>${matsim.version}</version>
+    </dependency>
+    
+    <!-- https://mvnrepository.com/artifact/org.matsim.contrib/osm -->
+    <dependency>
+        <groupId>org.matsim.contrib</groupId>
+        <artifactId>osm</artifactId>
+      <version>${matsim.version}</version>
+    </dependency>		
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+		</dependency>
+
+	</dependencies>
+	
+  <repositories>
+    <repository>
+      <!-- Repository for MATSim releases (MATSim is not on Maven central) -->
+      <id>matsim</id>
+      <url>https://dl.bintray.com/matsim/matsim</url>
+    </repository>
+    <repository>
+      <!-- For MATSim snapshots: -->
+      <id>ojo-snapshots</id>
+      <url>https://oss.jfrog.org/libs-snapshot</url>
+    </repository> 
+  </repositories>	
+
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+		</resources>
+
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+
+				<!-- Executable JAR -->
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>org.planit.aurin.parser.PlanitAurinParserMain</mainClass>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
+		</plugins>
+
+	</build>
+
+</project>

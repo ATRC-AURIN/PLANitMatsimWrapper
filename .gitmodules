@@ -1,0 +1,4 @@
+[submodule "modules/PLANitParentPom"]
+	path = modules/PLANitParentPom
+	url = https://github.com/AURIN-OFFICE/PLANitParentPom.git
+	branch = master
