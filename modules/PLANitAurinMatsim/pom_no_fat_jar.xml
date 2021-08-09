@@ -3,23 +3,35 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>org.planit.parentpom</groupId>
-		<artifactId>PLANitParentPom</artifactId>
-		<version>0.2.1a1</version>
-	</parent>
+  <parent>
+    <groupId>org.planit.aurin.matsimwrapper</groupId>
+    <artifactId>PLANitAurinMatsimWrapper</artifactId>
+    <version>0.2.1a1</version>
+  </parent>
 
 	<groupId>org.planit.aurin.matsim</groupId>
 	<artifactId>PLANitAurinMatsim</artifactId>
-	<description>Wrapper to only expose funcionality used by Aurin ATRC platform regarding MATSim simulation runs</description>
+	<description>Expose functionality used by Aurin ATRC platform regarding MATSim simulation runs</description>
 	<packaging>jar</packaging>
 
 	<name>PLANitAurinMatsim</name>
 	<url>https://github.com/AURIN-OFFICE/PLANitMatsimWrapper</url>
 	
-	<properties>
-	  <matsim.version>12.0</matsim.version>
-	</properties>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  
+    <matsim.version>12.0</matsim.version>
+    <planit.version>${project.version}</planit.version>
+    <junit.version>4.13-beta-2</junit.version>
+    
+    <!-- Maven plugin properties -->
+    <maven.compiler.java.version>11</maven.compiler.java.version>    
+    
+    <!-- Maven plugin versions -->
+    <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
+    <maven.jar.plugin.version>3.2.0</maven.jar.plugin.version>
+    <maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>
+  </properties>   
 
 	<!-- license based on the one published on the website -->
 	<licenses>
@@ -37,30 +49,21 @@
     <dependency>
       <groupId>org.planit</groupId>
       <artifactId>PLANit</artifactId>
-    </dependency>	
-
-		<dependency>
-			<groupId>org.planit.utils</groupId>
-			<artifactId>PLANitUtils</artifactId>
-		</dependency>
-		
-    <dependency>
-      <groupId>org.matsim</groupId>
-      <artifactId>matsim</artifactId>
-      <version>${matsim.version}</version>
+      <version>${planit.version}</version>
     </dependency>
-    
-    <!-- https://mvnrepository.com/artifact/org.matsim.contrib/osm -->
+   
     <dependency>
-        <groupId>org.matsim.contrib</groupId>
-        <artifactId>osm</artifactId>
-      <version>${matsim.version}</version>
-    </dependency>		
-
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-		</dependency>
+        <groupId>org.matsim</groupId>
+        <artifactId>matsim</artifactId>
+        <version>${matsim.version}</version>
+    </dependency>     
+    
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <optional>true</optional>
+      <version>${junit.version}</version>
+    </dependency> 
 
 	</dependencies>
 	
@@ -68,14 +71,9 @@
     <repository>
       <!-- Repository for MATSim releases (MATSim is not on Maven central) -->
       <id>matsim</id>
-      <url>https://dl.bintray.com/matsim/matsim</url>
+      <url>https://repo.matsim.org/repository/matsim</url>
     </repository>
-    <repository>
-      <!-- For MATSim snapshots: -->
-      <id>ojo-snapshots</id>
-      <url>https://oss.jfrog.org/libs-snapshot</url>
-    </repository> 
-  </repositories>	
+  </repositories>  
 
 	<build>
 		<resources>
@@ -84,32 +82,45 @@
 			</resource>
 		</resources>
 
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-source-plugin</artifactId>
-			</plugin>
+    <plugins>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>${maven.resources.plugin.version}</version>
+        <executions>
+          <!-- inherit from parent plugin management configuration -->
+          <execution>
+            <id>copy-resources</id>
+          </execution>
+        </executions>
+      </plugin>
 
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-dependency-plugin</artifactId>
-			</plugin>
-
-			<plugin>
-
-				<!-- Executable JAR -->
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<configuration>
-					<archive>
-						<manifest>
-							<mainClass>org.planit.aurin.parser.PlanitAurinParserMain</mainClass>
-						</manifest>
-					</archive>
-				</configuration>
-			</plugin>
-		</plugins>
-
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${maven.jar.plugin.version}</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <!-- no need for class path since dependencies are all included in shaded jar -->
+              <addClasspath>false</addClasspath>
+              <mainClass>org.planit.aurin.parser.PlanitAurinParserMain</mainClass>
+            </manifest>
+            <manifestEntries>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      
+       <plugin>
+         <groupId>org.apache.maven.plugins</groupId>
+         <artifactId>maven-compiler-plugin</artifactId>
+         <version>${maven.compiler.plugin.version}</version>
+         <configuration>
+           <source>${maven.compiler.java.version}</source>
+           <target>${maven.compiler.java.version}</target>
+           <release>${maven.compiler.java.version}</release>
+         </configuration>
+       </plugin>       
 	</build>
 
 </project>

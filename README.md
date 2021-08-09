@@ -20,13 +20,13 @@ This approach allows a user to not bother with dealing with any MATSim config fi
 
 ## Getting started
 
-The simplest way to use this wrapper is to build an executable jar file by running a Maven build on pom_fat_jar_java.xml. This will
-build a jar file that can be run from the command line. Below you will find an example on how to conduct a simple simulation assuming the mentioned inputs are available and setting all options via command line switches rather than providing your own custom configuration file directly. For further examples have a look at the tests included in this repository
+The simplest way to use this wrapper is to simply build this project via its pom.xml. Before performing a maven clean install, make sure that you **update the git submodules** of the repository with the **recursive** option switched on, otherwise the source code of the dependencies is not present. Once this is done, build the project. This will compile all dependent PLANit modules in the correct order as well as compiling the local PLANitAurinMatsim module that is part of this wrapper. The latter's pom.xml is configured to generate an executable jar in its target output dir. Hence, after successfully building this project the executable jar can be found under path/to/PLANitAurinMatsimWrapper/modules/PLANitAurinMatsim/target/PLANitAurinMatsim_version_.jar. It is this jar that can be run from the command line. Below you will find an example on how to conduct a simple conversion based on an OSM URL with a bounding box for a small area in Germany
 
 ```
-java -jar PLANitAurinMatsim.jar --type "simulation" --modes car_sim --crs "epsg:3112" --network "./Melbourne/car_simple_melbourne_network_cleaned.xml" --network_crs "epsg:3112" --plans "./Melbourne/plans_victoria.xml" --plans_crs epsg:3112 --activity_config "./Melbourne/activity_config.xml" --flowcap_factor 1 --storagecap_factor 1 --iterations_max 1
-
+java -jar PLANitAurinMatsim-<version>.jar --type simulation --modes car_sim --crs epsg:3112 --network "..\src\test\resources\Melbourne\car_simple_melbourne_network_cleaned.xml" --network_crs epsg:3112 --plans "..\src\test\resources\Melbourne\plans_victoria.xml" --plans_crs epsg:3112 --activity_config "..\src\test\resources\Melbourne\activity_config.xml" --iterations_max 2
 ```
+
+Below a list of the available command line options that are currently exposed. The PLANit OSM parser has many more options than currently made available. If you wish to use those, then we suggest not using this wrapper but instead directly utilise the PLANit platform instead.
 
 Below you will find a list of the available command line options that are currently exposed. The PLANit MATSim wrapper (and MATSim itself for that matter) has many more options than currently made available through command line options. If you wish to use those, then we suggest generating a (template based) configuration file instead (see other test examples in the repository) and adjust it to your needs. Then, use your own configuration file for running the simulation instead of using the command line switches.
 
@@ -75,15 +75,3 @@ When configuring the simulation via command line options directly, not using a c
 The *--modes* option defines what modes are simulated (car only, or car and pt) and how they are simulated. Currently only cars can be simulated, i.e., we only support *--modes car_sim* for now. The public transport support (both teleported and simulated is to be added at a later stage). If absent it defaults to *--modes car_sim.*
 
 The *--startttime* and *--endtime* option can be omitted in which case the entire day, i.e., all activities, will be simulated. 
-
-## General Maven build information 
-
-### Maven parent
-
-Projects need to be built from Maven before they can be run. The common maven configuration can be found in the PLANitParentPom project which acts as the parent for this project's pom.xml.
-
-> Make sure you install the PLANitParentPom pom.xml before conducting a maven build (in Eclipse) on this project, otherwise it cannot find the references dependencies, plugins, and other resources.
-
-### FAT Jar
-
-To run the wrapper in a stand-alone fashion (not from IDE) all dependencies need to be made available within the runnable jar. To support this a separate pom_fat_jar_java.xml is provided in the project that builds such a jar.
