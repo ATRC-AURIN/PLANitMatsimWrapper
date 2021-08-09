@@ -111,7 +111,7 @@
 						<manifest>
 							<!-- no need for class path since dependencies are all included in shaded jar -->
 							<addClasspath>false</addClasspath>
-							<mainClass>org.planit.aurin.parser.PlanitAurinMatsimMain</mainClass>
+							<mainClass>org.planit.aurin.matsim.PlanitAurinMatsimMain</mainClass>
 						</manifest>
 						<manifestEntries>
 						</manifestEntries>

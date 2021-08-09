@@ -444,7 +444,8 @@ public class PlanitAurinMatsimHelper {
    */
   private static Config createDefaultCarConfiguration() throws URISyntaxException, PlanItException {
     Config config = ConfigUtils.createConfig();
-    URI baseConfigUri = ResourceUtils.getResourceUri(DEFAULT_CAR_CONFIG_RESOURCE);    
+    URI baseConfigUri = ResourceUtils.getResourceUri(DEFAULT_CAR_CONFIG_RESOURCE);  
+    LOGGER.info("baseconfig URI used: "+baseConfigUri.toString());
     if(Files.notExists(Path.of(baseConfigUri))) {
       throw new PlanItException("Baseline default MATSim car configuration files %s, not found",DEFAULT_CAR_CONFIG_RESOURCE);
     }
