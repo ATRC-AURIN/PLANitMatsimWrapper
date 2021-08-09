@@ -50,9 +50,9 @@ public class AurinMatsimWrapperTest {
       int iterationsMax = 2;
         
       // java -jar PLANitAurinMatsim_version_.jar --type simulation --modes car_sim --crs epsg:3112 
-      //      --network "src\test\resources\Melbourne\car_simple_melbourne_network.xml" --network_crs epsg:3112
-      //      --plans "src\test\resources\Melbourne\plans_victoria.xml" --plans_crs epsg:3112 --activity_config
-      //      "src\test\resources\Melbourne\activity_config.xml" --iterations_max 2
+      //      --network "..\src\test\resources\Melbourne\car_simple_melbourne_network.xml" --network_crs epsg:3112
+      //      --plans "..\src\test\resources\Melbourne\plans_victoria.xml" --plans_crs epsg:3112 --activity_config
+      //      "..\src\test\resources\Melbourne\activity_config.xml" --iterations_max 2
       PlanitAurinMatsimMain.main(
           new String[]{
               "--type",

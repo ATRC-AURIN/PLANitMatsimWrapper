@@ -115,9 +115,11 @@ public class PlanitAurinMatsimMain {
     /* simulation is using MATSim config files to configure everything or use command line arguments instead */
     Optional<Config> config = null;      
     if(PlanitAurinMatsimHelper.isSimulationConfigurationFileBased(keyValueMap)) {
+      LOGGER.info(String.format("Running MATSim simulation using command line configuration file"));
       config = PlanitAurinMatsimHelper.createConfigurationFromFiles(
           PlanitAurinMatsimHelper.getConfigFileLocation(keyValueMap), PlanitAurinMatsimHelper.getOverrideConfigFileLocation(keyValueMap));
     }else {
+        LOGGER.info(String.format("Running MATSim simulation using command line configuration options"));
         config = PlanitAurinMatsimHelper.createConfigurationFromCommandLine(keyValueMap);
     }  
     config.ifPresentOrElse((theConfig) -> runSimulation(theConfig, keyValueMap), () -> LOGGER.severe("Unable to run MATSim simulation, configuration not available"));        
@@ -224,6 +226,7 @@ public class PlanitAurinMatsimMain {
         /* TYPE: SIMULATION ONLY */
         else if(PlanitAurinMatsimHelper.isSimulationType(keyValueMap)) {
           
+          LOGGER.info(String.format("Running MATSim simulation"));
           runSimulation(keyValueMap, outputDir);
           if(PlanitAurinMatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
             /* any temporary downsampled path should be deleted upon termination of the simulation */

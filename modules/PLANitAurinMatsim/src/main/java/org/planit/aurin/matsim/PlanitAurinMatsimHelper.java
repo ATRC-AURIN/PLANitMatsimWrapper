@@ -1,5 +1,7 @@
 package org.planit.aurin.matsim;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
@@ -17,6 +19,7 @@ import org.matsim.core.utils.misc.Time;
 import org.planit.utils.exceptions.PlanItException;
 import org.planit.utils.math.Precision;
 import org.planit.utils.misc.StringUtils;
+import org.planit.utils.misc.UriUtils;
 import org.planit.utils.resource.ResourceUtils;
 
 /**
@@ -34,7 +37,7 @@ public class PlanitAurinMatsimHelper {
   public static final Path CURRENT_PATH = Path.of(".").toAbsolutePath();
   
   /** the resource file reflecting the base car only configuration for a MATSim run */
-  public static final String DEFAULT_CAR_CONFIG_RESOURCE = "./baseconfig_car.xml";
+  public static final String DEFAULT_CAR_CONFIG_RESOURCE = "baseconfig_car.xml";
   
   /** the default name for a MATSim configuration file*/
   public static final String DEFAULT_MATSIM_CONFIG_FILE = "config.xml";  
@@ -191,6 +194,22 @@ public class PlanitAurinMatsimHelper {
   /** Key reflecting the factor to apply to all link storage capacities in simulation */
   public static final String CAPACITY_STORAGE_FACTOR_KEY = "storagecap_factor";       
     
+  /** create a local file in the given directory and file name location for a resource that is available from within a jar file
+   * 
+   * @param directory to use
+   * @param resourceFileNameToUse to use
+   * @param resourceLocation URI of resource in jar file
+   * @return location of created file which nis a copy of the jar resource on the local file system in desired location
+   * @throws IOException thrown if error
+   */
+  private static Path createLocalFileFromJarResourceOn(final Path directory, final String resourceFileNameToUse, URI resourceLocation) throws IOException {
+    Path jarResourceFileLocation = Path.of(directory.toString(), resourceFileNameToUse);
+    InputStream baseConfigInputStream = ResourceUtils.getResourceAsInputStream(resourceLocation);      
+    Files.copy(baseConfigInputStream,  jarResourceFileLocation);
+    baseConfigInputStream.close();
+    return jarResourceFileLocation;
+  }
+
   /** Collect the plans file location from command line arguments. If not set we use the current working directory and default plans name MATSIM_DEFAULT_PLANS.
    * 
    * @param keyValueMap to extract location from
@@ -426,7 +445,7 @@ public class PlanitAurinMatsimHelper {
       return;
     }
     if(!Paths.get(activityConfigValue).toFile().exists()) {
-      LOGGER.warning(String.format("Activity configuration file (--%s) not available",ACTIVITY_CONFIG_KEY));
+      LOGGER.warning(String.format("Activity configuration file (--%s) %s not available",ACTIVITY_CONFIG_KEY, activityConfigValue));
       return;
     }
     
@@ -441,15 +460,36 @@ public class PlanitAurinMatsimHelper {
    * 
    * @throws URISyntaxException when invalid URI 
    * @throws PlanItException when default config cannot be located
+   * @throws IOException thrown if error
    */
-  private static Config createDefaultCarConfiguration() throws URISyntaxException, PlanItException {
-    Config config = ConfigUtils.createConfig();
-    URI baseConfigUri = ResourceUtils.getResourceUri(DEFAULT_CAR_CONFIG_RESOURCE);  
-    LOGGER.info("baseconfig URI used: "+baseConfigUri.toString());
-    if(Files.notExists(Path.of(baseConfigUri))) {
+  private static Config createDefaultCarConfiguration() throws URISyntaxException, PlanItException, IOException {
+    URI baseConfigUri = ResourceUtils.getResourceUri(DEFAULT_CAR_CONFIG_RESOURCE);
+    LOGGER.info(String.format("Using PLANit default car only configuration as template from %s",baseConfigUri.toString()));
+    
+    /* when using resource in jar, extract it as local temp file for Matsim */
+    Path configFileLocation = null;
+    if(UriUtils.isInJar(baseConfigUri)){      
+      /* MATSim is not able to extract from jar, so we have to locally create the file and then delete it afterwards */
+      configFileLocation = createLocalFileFromJarResourceOn(CURRENT_PATH,DEFAULT_CAR_CONFIG_RESOURCE, baseConfigUri);
+    }else {
+      /* else just treat it as the local file that it is */
+      configFileLocation = Path.of(baseConfigUri);
+    }
+
+    /* update config with local config file used */
+    if(Files.notExists(configFileLocation)) {
       throw new PlanItException("Baseline default MATSim car configuration files %s, not found",DEFAULT_CAR_CONFIG_RESOURCE);
     }
-    ConfigUtils.loadConfig(config, Path.of(baseConfigUri).toAbsolutePath().toString());
+    
+    Config config = ConfigUtils.createConfig();    
+    ConfigUtils.loadConfig(config, configFileLocation.toAbsolutePath().toString());
+    
+    /* clean up by deleting temporary file if needed*/
+    if(UriUtils.isInJar(baseConfigUri)){
+      LOGGER.info(String.format("deleting local temp file %s",configFileLocation.toString()));
+      Files.delete(configFileLocation);
+    }
+    
     return config;
   }
 
