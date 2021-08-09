@@ -454,6 +454,7 @@ public class PlanitAurinMatsimHelper {
 
   /** Verify if the simulation is based on using MATSim configuration file(s) or using command line arguments
    * 
+   * @param keyValueMap to extract from
    * @return true when based on config files, false otherwise
    */
   public static boolean isSimulationConfigurationFileBased(final Map<String, String> keyValueMap) {
@@ -557,6 +558,7 @@ public class PlanitAurinMatsimHelper {
   /** The output directory to use. If not configure the default is provided which is the working directory of the application
    * 
    * @param keyValueMap to extract information from
+   * @return parsed output directory as path instance
    * @throws PlanItException thrown if error
    */
   public static Path parseOutputDirectory(final Map<String, String> keyValueMap) throws PlanItException {
@@ -652,8 +654,8 @@ public class PlanitAurinMatsimHelper {
    * directory to store it in. The original plans file name is supplemented with the sample size of the new population to create
    * the new file name 
    * 
-   * @param keyValueMap
-   * @param outputDir
+   * @param keyValueMap to extract from
+   * @param outputDir to use
    * @return path to down sampled plans file
    */
   public static Path createDownSampledPopulation(Map<String, String> keyValueMap, Path outputDir) {

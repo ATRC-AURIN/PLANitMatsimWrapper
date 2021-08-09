@@ -137,6 +137,8 @@
 							<includeDependencySources>true</includeDependencySources>
               <dependencySourceIncludes>
                 <!-- ONLY include the (non-generated) PLANit dependencies in the JavaDoc-->
+                <dependencySourceInclude>org.planit:*</dependencySourceInclude>
+                <dependencySourceInclude>org.planit.utils:*</dependencySourceInclude>                
                 <dependencySourceInclude>org.planit.aurin.matsim:*</dependencySourceInclude>
               </dependencySourceIncludes>			
 						</configuration>

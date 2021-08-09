@@ -27,7 +27,7 @@ import org.planit.utils.exceptions.PlanItException;
  * This access point provides three types of functionality: (i) <i> Run a simple MATSim simulation using basic command line options</i>, (ii) <i> Generate a MATSim configuration file
  * using basic command line options</i>, (iii) <i> Run a MATSim simulation using custom MATSim configuration file </i>, (iv) <i> generate standard 
  * default MATSim configuration file to adjust afterwards for future MATsim simulation run using (iii). these various types of functionality are triggered by
- * setting the {@ --type} parameter.
+ * setting the {@code --type} parameter </i>.
  *  
  * <ul>
  * <li>--type   indicates the type of functionality, options: {@code simulation, config, default_config}</li>
@@ -44,34 +44,33 @@ import org.planit.utils.exceptions.PlanItException;
  * The following command line options are available when configuring a simulation via the command line:
  * 
  * <ul>
- * <li>--modes              Options [{@code car_sim, car_sim_pt_teleport, car_pt_sim}]. Default car_sim</li>
+ * <li>--modes              Options [car_sim, car_sim_pt_teleport, car_pt_sim]. Default car_sim</li>
  * <li>--crs                Format: "epsg:xyz". Default: WGS84 (EPSG:4326). Indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234.</li>
- * <li>--network            Format: \<path\> to the network file. Default: cwd under "./network.xml"</li>
+ * <li>--network            Format: <i>path</i> to the network file. Default: cwd under "./network.xml"</li>
  * <li>--network_crs        Format: "epsg:xyz. Default: unchanged. Coordinate reference system of the network file, converted to --crs in simulation if different</li>
  * <li>--network_clean      Options: [yes, no]. Default: no. Applies a network clean operation on memory model of network before simulating. Can be used to remove unreachable links if needed</li> 
- * <li>--plans              Format: \<path\> to the activities file. Default: the cwd under "./plans.xml"</li>
+ * <li>--plans              Format: <i>path</i> to the activities file. Default: the cwd under "./plans.xml"</li>
  * <li>--plans_crs          Format: "epsg:xyz. Default: unchanged. Coordinate reference system of the plans file, converted to --crs in simulation if different</li>
  * <li>--plans_sample       Format: between 0 and 1. Default: 1. Sample of the population plans applied in simulation. When in config mode, downsampled plan is persisted as well</li>
- * <li>--activity_config    Format: \<path\> path to activity config file. Defining activity types portion in MATSim config file format (plancalcscore section only) compatible with the plans file</li>
+ * <li>--activity_config    Format: <i>path</i> to activity config file. Defining activity types portion in MATSim config file format (plancalcscore section only) compatible with the plans file</li>
  * <li>--starttime          Format: "hh:mm:ss". Default:00:00:00. Start time of the simulation in, ignore activities in the plans file before this time.</li>
  * <li>--endtime            Format: "hh:mm:ss". Default:00:00:00. End time of the simulation in "hh:mm:ss" format, ignore activities in the plans file after this time.</li>
  * <li>--flowcap_factor     Format: between 0 and 1. Default 1. Scale link flow capacity. Use icw down sampling of population plans to remain consistent</li>
  * <li>--storagecap_factor  Format: between 0 and 1. Default 1. Scale link storage capacity. Use icw down sampling of population plans to remain consistent</li>
  * <li>--iterations_max     Format: positive number. Default: none. Maximum number of iterations the simulation will run before terminating. Mandatory</li>
- * <li>--output             Format: \<directory\>.  Default: "./output". Location to store the generated simulation results or configuration file(s).</li>
+ * <li>--output             Format: <i>directory</i>.  Default: "./output". Location to store the generated simulation results or configuration file(s).</li>
  * </ul> 
  * <p>
  * The {@code --modes} option defines what modes are simulated (car only, or car and pt) and how they are simulated. Currently only cars can be simulated, i.e., 
  * we only support {@code --modes car_sim}. The public transport support (both teleported and simulated is to be added at a later stage). If absent it defaults to
  * {@code --modes car_sim}
  * <p>
- * <p>
  * The {@code --startttime} and {@code --endtime} option can be omitted in which case the entire day, i.e., all activities, will be simulated. 
  * <p>
  * In case the user decides not to use these shortcuts but instead prefers its own configuration file(s) that is also possible, in which case the following two commands should be used:
  *  <ul>
- *  <li>--config          Format: \<path\> to config file to use. Default: none. This configuration should ideally be complete unless the--override_config is also used.</li>
- *  <li>--override_config Format: \<path\> to additional config file. Default: none. Options in this configuration override or supplement the ones in the --config one. Optional</li>
+ *  <li>--config          Format: <i>path</i> to config file to use. Default: none. This configuration should ideally be complete unless the--override_config is also used.</li>
+ *  <li>--override_config Format: <i>path</i> to additional config file. Default: none. Options in this configuration override or supplement the ones in the --config one. Optional</li>
  * </ul> 
  * 
  * We note that when the above options are used all other command line options for simulation are ignored since they custom configuration file takes precedence.
