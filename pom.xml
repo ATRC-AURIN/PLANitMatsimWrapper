@@ -25,9 +25,9 @@
 
 	<modules>
 		<!-- PLANit dependencies that are not available from central repo, so added as submodules-->
-		<module>modules/PLANitParentPom</module>
+		<module>PLANitParentPom</module>
 		<!-- actual content of this repo -->
-		<module>modules/PLANitAurinMatsim</module>	  
+		<module>PLANitAurinMatsim</module>	  
   </modules> 
 
 </project>
