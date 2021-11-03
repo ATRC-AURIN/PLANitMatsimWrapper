@@ -5,13 +5,13 @@
 	by the party that also provides the plans.xml file -->
 <config>
 	<module name="planCalcScore">
-	  <parameterset type="activityParams">
-      <param name="activityType" value="At Home" /> <!-- VISTA home -->
-      <param name="priority" value="1" />
-      <param name="typicalDuration" value="02:00:00" />
-      <param name="minimalDuration" value="00:00:00" />
-    </parameterset>
-	
+		<parameterset type="activityParams">
+			<param name="activityType" value="At Home" /> <!-- VISTA home -->
+			<param name="priority" value="1" />
+			<param name="typicalDuration" value="02:00:00" />
+			<param name="minimalDuration" value="00:00:00" />
+		</parameterset>
+
 		<parameterset type="activityParams">
 			<param name="activityType" value="Go Home" /> <!-- VISTA home -->
 			<param name="priority" value="1" />

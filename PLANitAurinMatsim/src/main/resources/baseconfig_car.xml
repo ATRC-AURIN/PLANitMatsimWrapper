@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE config SYSTEM "http://www.matsim.org/files/dtd/config_v2.dtd">
+<!-- Base configuration for car based simulation, no public transport -->
 <config>
 	<module name="controler">
 		<!-- Sets whether graphs showing some analyses should automatically be 
@@ -83,10 +84,12 @@
 		<param name="vehiclesSource" value="defaultVehicle" />
 	</module>
 	<module name="strategy">
-	   <!-- at least one strategy must be active otherwise MATSim fails. For car only we do not include mode choice
-	   and for this basic config we keep things simple: random rerouting 20% chance, random end time change 10%,
-	   use MNL route choice and use the e^(delta between best and current route)=0.7 to determine if current route should be
-	   chosen instead of "best" route (these are all defaults based on MATSim user guide, so nothing fancy) -->
+		<!-- at least one strategy must be active otherwise MATSim fails. For car 
+			only we do not include mode choice and for this basic config we keep things 
+			simple: random rerouting 20% chance, random end time change 10%, use MNL 
+			route choice and use the e^(delta between best and current route)=0.7 to 
+			determine if current route should be chosen instead of "best" route (these 
+			are all defaults based on MATSim user guide, so nothing fancy) -->
 		<parameterset type="strategysettings">
 			<param name="strategyName" value="ReRoute" />
 			<param name="weight" value="0.2" />
