@@ -2,32 +2,265 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+	<version>0.0.1a1</version>
 
-	<groupId>org.planit.aurin.matsimwrapper</groupId>
-	<artifactId>PLANitAurinMatsimWrapper</artifactId>
-	<description>parent defining submodules used by PLANitAurinMatsim content module</description>
-	<!-- should match the PLANit parent pom versioning -->
-	<version>0.2.1a1</version>
-	<packaging>pom</packaging>
+	<groupId>org.planit.aurin.matsim</groupId>
+	<artifactId>planit-aurin-matsim</artifactId>
+	<description>Generate PLANit Aurin MATSim Wrapper's fat jar. Gathers all dependencies and packages them in one jar
+	 This can be used for using the wrapper in a stand alone fashion without any access to sources of project builds
+	</description>
+	<packaging>jar</packaging>
 
-	<name>PLANitAurinMatsimWrapper</name>
-	<url>https://github.com/AURIN-OFFICE/PLANitMatsimWrapper</url>
-	
-	<!-- license based on the one published on the website -->
-	<licenses>
-		<license>
-			<name>PLANit license based on modified BSD</name>
-			<url>${planit.website.url}/docs/licenses/LICENSE.txt</url>
-			<distribution>repo</distribution>
-			<comments>A slightly modified version of a modified BSD license</comments>
-		</license>
-	</licenses>
+	<name>PLANitAurinMatsim</name>
 
-	<modules>
-		<!-- PLANit dependencies that are not available from central repo, so added as submodules-->
-		<module>PLANitParentPom</module>
-		<!-- actual content of this repo -->
-		<module>PLANitAurinMatsim</module>	  
-  </modules> 
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+		<matsim.version>12.0</matsim.version>
+		<planit.version>0.3.0</planit.version>
+		<junit.version>4.13-beta-2</junit.version>
+
+		<!-- Maven plugin properties -->
+		<maven.compiler.java.version>11</maven.compiler.java.version>
+
+		<!-- Maven plugin versions -->
+		<maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
+		<maven.shade.plugin.version>3.2.4</maven.shade.plugin.version>
+		<maven.jar.plugin.version>3.2.0</maven.jar.plugin.version>
+		<maven.javadoc.plugin.version>3.2.0</maven.javadoc.plugin.version>
+		<maven.resources.plugin.version>3.1.0</maven.resources.plugin.version>
+
+		<!-- override jts version as it is inconsistent between planit and matsim 
+			dependencies -->
+		<jts.version>1.17.1</jts.version>
+
+	</properties>
+
+	<dependencies>
+
+		<!-- version inherited from parent -->
+		<dependency>
+			<groupId>org.goplanit</groupId>
+			<artifactId>planit-core</artifactId>
+			<version>${planit.version}</version>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.matsim.contrib/osm -->
+		<dependency>
+			<groupId>org.matsim</groupId>
+			<artifactId>matsim</artifactId>
+			<version>${matsim.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<!-- only used locally for testing so not an actual dependency for using 
+				the API -->
+			<optional>true</optional>
+			<version>${junit.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.locationtech.jts</groupId>
+			<artifactId>jts-core</artifactId>
+			<version>${jts.version}</version>
+		</dependency>
+
+	</dependencies>
+
+	<repositories>
+		<repository>
+			<!-- Repository for MATSim releases (MATSim is not on Maven central) -->
+			<id>matsim</id>
+			<url>https://repo.matsim.org/repository/matsim</url>
+		</repository>
+
+		<!-- PLANit repository -->
+		<repository>
+			<id>planit-repository.goplanit.org</id>
+			<name>PLANit Repository</name>
+			<url>http://repository.goplanit.org</url>
+		</repository>
+
+	</repositories>
+
+	<build>
+
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+			</resource>
+		</resources>
+
+		<plugins>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>${maven.resources.plugin.version}</version>
+				<executions>
+					<!-- inherit from parent plugin management configuration -->
+					<execution>
+						<id>copy-resources</id>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>${maven.jar.plugin.version}</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<!-- no need for class path since dependencies are all included in 
+								shaded jar -->
+							<addClasspath>false</addClasspath>
+							<mainClass>org.goplanit.aurin.matsim.PlanitAurinMatsimMain</mainClass>
+						</manifest>
+						<manifestEntries>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>${maven.javadoc.plugin.version}</version>
+				<executions>
+					<execution>
+						<id>javadoc-jar</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+						<configuration>
+							<!-- place generated javadocs in /docs directory of root -->
+							<reportOutputDirectory>${basedir}</reportOutputDirectory>
+							<destDir>docs</destDir>
+							<!-- switch on dependency-driven aggregation -->
+							<includeDependencySources>true</includeDependencySources>
+							<dependencySourceIncludes>
+								<!-- ONLY include the (non-generated) PLANit dependencies in the 
+									JavaDoc -->
+								<dependencySourceInclude>org.goplanit:*</dependencySourceInclude>
+								<dependencySourceInclude>org.goplanit.utils:*</dependencySourceInclude>
+								<dependencySourceInclude>org.goplanit.aurin.matsim:*</dependencySourceInclude>
+							</dependencySourceIncludes>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>${maven.shade.plugin.version}</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+						<configuration>
+							<!-- no minimisation for now as it breaks matsim/hibernate that depend 
+								on reflection -->
+							<minimizeJar>false</minimizeJar>
+							<filters>
+								<filter>
+									<artifact>org.goplanit.utils:planit-utils</artifact>
+									<includes>
+										<include>**</include>
+									</includes>
+								</filter>
+								<filter>
+									<artifact>org.goplanit:planit-core</artifact>
+									<includes>
+										<include>**</include>
+									</includes>
+								</filter>
+								<!-- EXCLUDE javax.media as it is not used in run-time application 
+									environment -->
+								<filter>
+									<artifact>javax.media:*</artifact>
+									<excludes>
+										<exclude>**</exclude>
+									</excludes>
+								</filter>
+								<filter>
+									<artifact>org.apache.maven:*</artifact>
+									<excludes>
+										<exclude>**</exclude>
+									</excludes>
+								</filter>
+								<filter>
+									<artifact>*:*</artifact>
+									<excludes>
+										<!-- should not be in final jar -->
+										<exclude>.gitkeep</exclude>
+										<!-- remove Eclipse development information from the final jar -->
+										<exclude>development/**</exclude>
+										<!-- EXCLUDE Module-info.classes to avoid warnings on breaking 
+											encapsultation -->
+										<exclude>module-info.class</exclude>
+										<!-- EXCLUDE third party manifest information that is not needed 
+											or otherwise accounted for already -->
+										<exclude>**/MANIFEST.MF</exclude>
+										<exclude>META-INF/DEPENDENCIES</exclude>
+										<exclude>META-INF/*.SF</exclude>
+										<exclude>META-INF/*.DSA</exclude>
+										<exclude>META-INF/*.RSA</exclude>
+										<!-- exclude episode metadata generated by jaxb, it is not required -->
+										<exclude>META-INF/*.episode</exclude>
+										<!-- exclude jdom license it is already included otherwise -->
+										<exclude>META-INF/jdom-info.xml</exclude>
+										<!-- related to openjump a gis visualisation tool, it contained 
+											reference to vividsolutinos JTS but it appears to not be used so remove from 
+											jar -->
+										<exclude>jump-workbench-properties.xml</exclude>
+										<exclude>Doxyfile</exclude>
+										<!-- EXCLUDE djutils license information that is already otherwise 
+											added -->
+										<exclude>LICENSE.txt</exclude>
+										<exclude>license.html</exclude>
+									</excludes>
+								</filter>
+							</filters>
+							<transformers>
+								<!-- deal with apache licenses from multiple jars/packages appropriately -->
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer" />
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+									<addHeader>false</addHeader>
+								</transformer>
+								<!-- merge meta information of third party jars using plexus components 
+									and configurations -->
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ComponentsXmlResourceTransformer" />
+								<!-- merge meta information of maven plugins using plugin.xml -->
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.PluginXmlResourceTransformer" />
+								<transformer
+									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+								</transformer>
+							</transformers>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>${maven.compiler.plugin.version}</version>
+				<configuration>
+					<source>${maven.compiler.java.version}</source>
+					<target>${maven.compiler.java.version}</target>
+					<release>${maven.compiler.java.version}</release>
+				</configuration>
+			</plugin>
+
+		</plugins>
+	</build>
 
 </project>

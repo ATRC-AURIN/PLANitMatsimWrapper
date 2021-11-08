@@ -1,4 +1,4 @@
-package org.planit.aurin.matsim;
+package org.goplanit.aurin.matsim;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,11 +16,11 @@ import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.utils.misc.Time;
-import org.planit.utils.exceptions.PlanItException;
-import org.planit.utils.math.Precision;
-import org.planit.utils.misc.StringUtils;
-import org.planit.utils.misc.UriUtils;
-import org.planit.utils.resource.ResourceUtils;
+import org.goplanit.utils.exceptions.PlanItException;
+import org.goplanit.utils.math.Precision;
+import org.goplanit.utils.misc.StringUtils;
+import org.goplanit.utils.misc.UriUtils;
+import org.goplanit.utils.resource.ResourceUtils;
 
 /**
  * Helper methods to configure the AURIN MATSim wrapper based on user arguments provided for this wrapper.

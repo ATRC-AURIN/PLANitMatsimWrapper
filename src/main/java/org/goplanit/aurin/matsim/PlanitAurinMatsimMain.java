@@ -1,4 +1,4 @@
-package org.planit.aurin.matsim;
+package org.goplanit.aurin.matsim;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,10 +13,10 @@ import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigWriter;
 import org.matsim.core.controler.Controler;
 import org.matsim.core.scenario.ScenarioUtils;
-import org.planit.logging.Logging;
-import org.planit.utils.args.ArgumentParser;
-import org.planit.utils.args.ArgumentStyle;
-import org.planit.utils.exceptions.PlanItException;
+import org.goplanit.logging.Logging;
+import org.goplanit.utils.args.ArgumentParser;
+import org.goplanit.utils.args.ArgumentStyle;
+import org.goplanit.utils.exceptions.PlanItException;
 
 /**
  * Access point for running a PLANit MATsim simulation or generating config files to do so at a later stage via this same wrapper.

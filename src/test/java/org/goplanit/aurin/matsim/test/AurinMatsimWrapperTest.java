@@ -1,16 +1,16 @@
-package org.planit.aurin.matsim.test;
+package org.goplanit.aurin.matsim.test;
 
 import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.net.URL;
 
+import org.goplanit.aurin.matsim.PlanitAurinMatsimMain;
 import org.junit.AfterClass;
 import org.junit.Test;
-import org.planit.aurin.matsim.PlanitAurinMatsimMain;
-import org.planit.utils.misc.FileUtils;
-import org.planit.utils.misc.UrlUtils;
-import org.planit.utils.resource.ResourceUtils;
+import org.goplanit.utils.misc.FileUtils;
+import org.goplanit.utils.misc.UrlUtils;
+import org.goplanit.utils.resource.ResourceUtils;
 
 /**
  * Test the PLANit MATSim simulation Wrapper for the AURIN platform.
