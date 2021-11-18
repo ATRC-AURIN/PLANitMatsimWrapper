@@ -48,11 +48,14 @@ public class AurinMatsimWrapperTest {
       
       double downSampleFactor = 1;
       int iterationsMax = 2;
+      
+      int linkStatsAverageInterval = 1;
+      int linkStatsWriteInterval = 1;
         
       // java -jar PLANitAurinMatsim_version_.jar --type simulation --modes car_sim --crs epsg:3112 
       //      --network "..\src\test\resources\Melbourne\car_simple_melbourne_network.xml" --network_crs epsg:3112
       //      --plans "..\src\test\resources\Melbourne\plans_victoria.xml" --plans_crs epsg:3112 --activity_config
-      //      "..\src\test\resources\Melbourne\activity_config.xml" --iterations_max 2
+      //      "..\src\test\resources\Melbourne\activity_config.xml" --link_stats 1,1 --iterations_max 2
       PlanitAurinMatsimMain.main(
           new String[]{
               "--type",
@@ -75,6 +78,8 @@ public class AurinMatsimWrapperTest {
               String.valueOf(downSampleFactor),
               "--storagecap_factor",
               String.valueOf(downSampleFactor),
+              "--link_stats",
+              String.valueOf(linkStatsAverageInterval)+"," + String.valueOf(linkStatsWriteInterval),              
               "--iterations_max",
               String.valueOf(iterationsMax)});     
       

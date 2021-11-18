@@ -47,7 +47,7 @@ import org.goplanit.utils.exceptions.PlanItException;
  * <li>--modes              Options [car_sim, car_sim_pt_teleport, car_pt_sim]. Default car_sim</li>
  * <li>--crs                Format: "epsg:xyz". Default: WGS84 (EPSG:4326). Indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234.</li>
  * <li>--network            Format: <i>path</i> to the network file. Default: cwd under "./network.xml"</li>
- * <li>--network_crs        Format: "epsg:xyz. Default: unchanged. Coordinate reference system of the network file, converted to --crs in simulation if different</li>
+ * <li>--network_crs        Format: "epsg:xyz". Default: unchanged. Coordinate reference system of the network file, converted to --crs in simulation if different</li>
  * <li>--network_clean      Options: [yes, no]. Default: no. Applies a network clean operation on memory model of network before simulating. Can be used to remove unreachable links if needed</li> 
  * <li>--plans              Format: <i>path</i> to the activities file. Default: the cwd under "./plans.xml"</li>
  * <li>--plans_crs          Format: "epsg:xyz. Default: unchanged. Coordinate reference system of the plans file, converted to --crs in simulation if different</li>
@@ -57,6 +57,7 @@ import org.goplanit.utils.exceptions.PlanItException;
  * <li>--endtime            Format: "hh:mm:ss". Default:00:00:00. End time of the simulation in "hh:mm:ss" format, ignore activities in the plans file after this time.</li>
  * <li>--flowcap_factor     Format: between 0 and 1. Default 1. Scale link flow capacity. Use icw down sampling of population plans to remain consistent</li>
  * <li>--storagecap_factor  Format: between 0 and 1. Default 1. Scale link storage capacity. Use icw down sampling of population plans to remain consistent</li>
+ * <li>--link_stats         Format: <i>int1,int2</i>". Default: from config file. Set linkStats configuration, <i>int1</i> is the iteration interval to average over, <i>int2</i> is iteration persistence interval, int1 is smaller or equal than int2, when int2 is 0, no persistence </li>
  * <li>--iterations_max     Format: positive number. Default: none. Maximum number of iterations the simulation will run before terminating. Mandatory</li>
  * <li>--output             Format: <i>directory</i>.  Default: "./output". Location to store the generated simulation results or configuration file(s).</li>
  * </ul> 

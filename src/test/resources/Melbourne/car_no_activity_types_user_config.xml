@@ -25,8 +25,8 @@
 		<param name="numberOfThreads" value="4" />
 	</module>
 	<module name="linkStats">
-		<param name="averageLinkStatsOverIterations" value="5" />
-		<param name="writeLinkStatsInterval" value="10" />
+		<param name="averageLinkStatsOverIterations" value="0" />
+		<param name="writeLinkStatsInterval" value="1" />
 	</module>
 	<module name="planscalcroute">
 		<param name="networkModes" value="car" />

@@ -192,7 +192,14 @@ public class PlanitAurinMatsimHelper {
   public static final String CAPACITY_FLOW_FACTOR_KEY = "flowcap_factor";      
   
   /** Key reflecting the factor to apply to all link storage capacities in simulation */
-  public static final String CAPACITY_STORAGE_FACTOR_KEY = "storagecap_factor";       
+  public static final String CAPACITY_STORAGE_FACTOR_KEY = "storagecap_factor";   
+  
+  //----------------------------------------------------
+  //-------- LINK STATS --------------------------------
+  //----------------------------------------------------
+  
+  /** Key reflecting the linkStats configuration to apply to the simulation */
+  public static final String LINK_STATS_KEY = "link_stats";  
     
   /** create a local file in the given directory and file name location for a resource that is available from within a jar file
    * 
@@ -338,6 +345,7 @@ public class PlanitAurinMatsimHelper {
     
     LOGGER.info(String.format("[SETTING] MATSim plans CRS: %s", crsValue));
     config.plans().setInputCRS(crsValue);
+    
   }
 
   /** Configure the start time of the simulation. If not set we use the default MATSIM_DEFAULT_STARTTIME and all activities
@@ -407,6 +415,44 @@ public class PlanitAurinMatsimHelper {
       LOGGER.warning("IGNORED: Simulation flow capacity factor is not a valid floating point value");
     }  
     LOGGER.info(String.format("[SETTING] MATSim flow capacity factor: %.2f", factor));        
+  }
+
+  /** Configure the link stats, i.e., override the default on how the hourly link stats are persisted
+   * if at all.
+   * <p> 
+   * The link stats are in fact two values, one for the averaging interval (number of iterations to average over) while
+   * the second is the interval to use for persisting the link stats. Clearly the former must be smaller than the latter.
+   * They are expected to be comma separated
+   * 
+   * @param config to use
+   * @param keyValueMap to use
+   */
+  private static void configureLinkStats(Config config, Map<String, String> keyValueMap) {
+    int averageOverIterations = config.linkStats().getAverageLinkStatsOverIterations();
+    int writeInterval = config.linkStats().getWriteLinkStatsInterval();
+    TRY : try {
+      String linkStats = keyValueMap.get(LINK_STATS_KEY);
+      if(linkStats != null) {
+        String[] linkStatsArray = linkStats.split(","); 
+        if(linkStatsArray.length!=2) {
+          LOGGER.warning(String.format("IGNORED: %s value is not a comma seaprated string of length 2, adopting defaults", LINK_STATS_KEY));
+          break TRY;
+        }
+        averageOverIterations = Integer.parseInt(linkStatsArray[0]);
+        config.linkStats().setAverageLinkStatsOverIterations(averageOverIterations);
+        writeInterval = Integer.parseInt(linkStatsArray[1]);
+        config.linkStats().setWriteLinkStatsInterval(writeInterval);
+      }
+    }catch(Exception e) {
+      LOGGER.warning(String.format("IGNORED: %s value is not properly configured", LINK_STATS_KEY));
+    }  
+    
+    if(writeInterval > 0) {
+      LOGGER.info(String.format("[SETTING] MATSim linkStats averaged over %d iterations", averageOverIterations));
+      LOGGER.info(String.format("[SETTING] MATSim linkStats persisted every %d iterations", writeInterval));
+    }else {
+      LOGGER.info("[SETTING] MATSim linkStats disabled");
+    }
   }
 
   /** Configure the maximum number of iterations of the simulation. If not set we use the default DEFAULT_ITERATIONS_MAX.
@@ -647,6 +693,7 @@ public class PlanitAurinMatsimHelper {
     PlanitAurinMatsimHelper.configureEndTime(config,keyValueMap);
     PlanitAurinMatsimHelper.configureFlowCapacityFactor(config,keyValueMap);
     PlanitAurinMatsimHelper.configureStorageCapacityFactor(config,keyValueMap);
+    PlanitAurinMatsimHelper.configureLinkStats(config,keyValueMap);
     PlanitAurinMatsimHelper.configureIterationsMax(config,keyValueMap);
     
     return Optional.of(config);

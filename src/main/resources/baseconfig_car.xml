@@ -44,10 +44,10 @@
 			that are used for the link statistics. Use 1 or 0 to only use the link volumes 
 			of a single iteration. This values cannot be larger than the value specified 
 			for writeLinkStatsInterval -->
-		<param name="averageLinkStatsOverIterations" value="5" />
+		<param name="averageLinkStatsOverIterations" value="0" />
 		<!-- Specifies how often the link stats should be calculated and written. 
 			Use 0 to disable the generation of link stats. -->
-		<param name="writeLinkStatsInterval" value="10" />
+		<param name="writeLinkStatsInterval" value="1" />
 	</module>
 	<module name="planscalcroute">
 		<!-- All the modes for which the router is supposed to generate network 
