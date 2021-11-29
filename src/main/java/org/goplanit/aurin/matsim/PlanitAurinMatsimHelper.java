@@ -39,6 +39,9 @@ public class PlanitAurinMatsimHelper {
   /** the resource file reflecting the base car only configuration for a MATSim run */
   public static final String DEFAULT_CAR_CONFIG_RESOURCE = "baseconfig_car.xml";
   
+  /** the resource file reflecting the car simulation with public transport teleportation support default configuration for a MATSim run */
+  public static final String DEFAULT_CAR_SIM_PT_TELE_CONFIG_RESOURCE = "baseconfig_car_pt_tele.xml";  
+  
   /** the default name for a MATSim configuration file*/
   public static final String DEFAULT_MATSIM_CONFIG_FILE = "config.xml";  
   
@@ -210,8 +213,8 @@ public class PlanitAurinMatsimHelper {
    * @throws IOException thrown if error
    */
   private static Path createLocalFileFromJarResourceOn(final Path directory, final String resourceFileNameToUse, URI resourceLocation) throws IOException {
-    Path jarResourceFileLocation = Path.of(directory.toString(), resourceFileNameToUse);
     InputStream baseConfigInputStream = ResourceUtils.getResourceAsInputStream(resourceLocation);      
+    Path jarResourceFileLocation = Path.of(directory.toString(), resourceFileNameToUse);    
     Files.copy(baseConfigInputStream,  jarResourceFileLocation);
     baseConfigInputStream.close();
     return jarResourceFileLocation;
@@ -238,13 +241,12 @@ public class PlanitAurinMatsimHelper {
   private static void configureModes(final Config config, final Map<String, String> keyValueMap) {
     String modesValue = keyValueMap.get(MODES_KEY);
     switch (modesValue) {
+      case MODES_CAR_SIM_PT_TELEPORT_VALUE:
+        LOGGER.info("[SETTING] teleportation mode: pt");
       case MODES_CAR_SIM_VALUE:
         config.changeMode().setModes(new String[] {MATSIM_CAR_MODE});
         LOGGER.info("[SETTING] simulation mode: car");
         break;
-      case MODES_CAR_SIM_PT_TELEPORT_VALUE:
-        LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", modesValue));
-        break;        
       case MODES_CAR_PT_SIM_VALUE:
         LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", modesValue));
         break;                
@@ -279,11 +281,7 @@ public class PlanitAurinMatsimHelper {
     String networkFileLocation = keyValueMap.get(NETWORK_KEY);     
     try {      
       
-      Path networkFileLocationAsPath = null;      
-      if(StringUtils.isNullOrBlank(networkFileLocation)) {
-        networkFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_NETWORK).toString();
-      }      
-      networkFileLocationAsPath = Paths.get(networkFileLocation).normalize();
+      Path networkFileLocationAsPath = parseNetworkFileLocation(keyValueMap);           
       
       /* set network path location */
       LOGGER.info(String.format("[SETTING] MATSim network file: %s", networkFileLocationAsPath.toString()));
@@ -499,6 +497,45 @@ public class PlanitAurinMatsimHelper {
     LOGGER.info(String.format("[SETTING] MATSim activity config settings: %s", activityConfigValue));        
     ConfigUtils.loadConfig(config, activityConfigValue);
   }
+  
+  /**
+   * Create the in-memory configuration based on provided config file location.
+   * 
+   * @param configFileTemplateLocation to create in memory configuration for
+   * @throws URISyntaxException when invalid URI 
+   * @throws PlanItException when default config cannot be located
+   * @throws IOException thrown if error
+   */
+  private static Config createConfiguration(final String configFileTemplateLocation) throws URISyntaxException, PlanItException, IOException {
+    URI baseConfigUri = ResourceUtils.getResourceUri(configFileTemplateLocation);
+    LOGGER.fine(String.format("configuration template sourced from %s",baseConfigUri.toString()));
+    
+    /* when using resource in jar, extract it as local temp file for Matsim */
+    Path configFileLocation = null;
+    if(UriUtils.isInJar(baseConfigUri)){      
+      /* MATSim is not able to extract from jar, so we have to locally create the file and then delete it afterwards */
+      configFileLocation = createLocalFileFromJarResourceOn(CURRENT_PATH,configFileTemplateLocation, baseConfigUri);
+    }else {
+      /* else just treat it as the local file that it is */
+      configFileLocation = Path.of(baseConfigUri);
+    }
+
+    /* update config with local config file used */
+    if(Files.notExists(configFileLocation)) {
+      throw new PlanItException("Configuration file %s to use, not found",configFileTemplateLocation);
+    }
+    
+    Config config = ConfigUtils.createConfig();    
+    ConfigUtils.loadConfig(config, configFileLocation.toAbsolutePath().toString());
+    
+    /* clean up by deleting temporary file if needed*/
+    if(UriUtils.isInJar(baseConfigUri)){
+      LOGGER.fine(String.format("deleting local temp file %s",configFileLocation.toString()));
+      Files.delete(configFileLocation);
+    }
+    
+    return config;
+  }  
 
   /**
    * Create the default configuration for a car only simulation based on this wrapper's default config
@@ -508,36 +545,23 @@ public class PlanitAurinMatsimHelper {
    * @throws PlanItException when default config cannot be located
    * @throws IOException thrown if error
    */
-  private static Config createDefaultCarConfiguration() throws URISyntaxException, PlanItException, IOException {
-    URI baseConfigUri = ResourceUtils.getResourceUri(DEFAULT_CAR_CONFIG_RESOURCE);
-    LOGGER.info(String.format("Using PLANit default car only configuration as template from %s",baseConfigUri.toString()));
-    
-    /* when using resource in jar, extract it as local temp file for Matsim */
-    Path configFileLocation = null;
-    if(UriUtils.isInJar(baseConfigUri)){      
-      /* MATSim is not able to extract from jar, so we have to locally create the file and then delete it afterwards */
-      configFileLocation = createLocalFileFromJarResourceOn(CURRENT_PATH,DEFAULT_CAR_CONFIG_RESOURCE, baseConfigUri);
-    }else {
-      /* else just treat it as the local file that it is */
-      configFileLocation = Path.of(baseConfigUri);
-    }
-
-    /* update config with local config file used */
-    if(Files.notExists(configFileLocation)) {
-      throw new PlanItException("Baseline default MATSim car configuration files %s, not found",DEFAULT_CAR_CONFIG_RESOURCE);
-    }
-    
-    Config config = ConfigUtils.createConfig();    
-    ConfigUtils.loadConfig(config, configFileLocation.toAbsolutePath().toString());
-    
-    /* clean up by deleting temporary file if needed*/
-    if(UriUtils.isInJar(baseConfigUri)){
-      LOGGER.info(String.format("deleting local temp file %s",configFileLocation.toString()));
-      Files.delete(configFileLocation);
-    }
-    
-    return config;
+  private static Config createDefaultCarSimConfiguration() throws URISyntaxException, PlanItException, IOException {
+    LOGGER.info("Using PLANit default car only configuration template");
+    return createConfiguration(DEFAULT_CAR_CONFIG_RESOURCE);
   }
+  
+  /**
+   * Create the default configuration for a car simulation with teleported public transport mode based on this wrapper's default config
+   * file.
+   * 
+   * @throws URISyntaxException when invalid URI 
+   * @throws PlanItException when default config cannot be located
+   * @throws IOException thrown if error
+   */
+  private static Config createDefaultCarSimPtTeleportConfiguration() throws URISyntaxException, PlanItException, IOException {
+    LOGGER.info("Using PLANit default car simulation with teleported public transport configuration template");
+    return createConfiguration(DEFAULT_CAR_SIM_PT_TELE_CONFIG_RESOURCE);
+  }  
 
   /** Verify if the simulation is based on using MATSim configuration file(s) or using command line arguments
    * 
@@ -606,6 +630,28 @@ public class PlanitAurinMatsimHelper {
   }
    
 
+  /** Verify if population (plans) is to be down sampled
+   * 
+   * @param keyValueMap to check for
+   * @return true when down sampling is enable, false otherwise
+   */
+  public static boolean isPopulationPlansDownSampled(Map<String, String> keyValueMap) {
+    if(!keyValueMap.containsKey(PLANS_SAMPLE_KEY)) {
+      return false;
+    }
+    
+    try {
+      double downSamplingFactor = Double.parseDouble(keyValueMap.get(PLANS_SAMPLE_KEY));
+      if(downSamplingFactor>1) {
+        LOGGER.warning("IGNORED: Plans down sampling percentage is larger than 1, should be between 0 and 1");  
+      }
+      return (downSamplingFactor + Precision.EPSILON_3) < 1;
+    }catch(Exception e) {
+      LOGGER.warning("IGNORED: Plans down sampling percentage is not a valid floating point value");
+      return false;
+    }
+  }
+
   /** Collect the location of the config file from the command line arguments (if any)
    * 
    * @param keyValueMap to extract from
@@ -664,15 +710,53 @@ public class PlanitAurinMatsimHelper {
   }
 
 
-  /** Generate a MATSim configuration in memory based on command line arguments. 
+  /** Determine what modesType we are working with (car, car and pt (teleport), car and pt))
+   * 
+   * @param keyValueMap to extract information from
+   * @return type found
+   */
+  public static ModesType parseModesType(final Map<String, String> keyValueMap) {
+    if(!keyValueMap.containsKey(MODES_KEY)) {
+        return ModesType.CAR_ONLY;
+    }
+    
+    return ModesType.of(keyValueMap.get(MODES_KEY));
+  }
+
+  /** Collect the network file location as path based on the user configuration (if any) or defaults
+   * 
+   * @param keyValueMap to use
+   * @return network file location to use
+   */
+  public static Path parseNetworkFileLocation(Map<String, String> keyValueMap) {        
+    String networkFileLocation = keyValueMap.get(NETWORK_KEY);       
+    if(StringUtils.isNullOrBlank(networkFileLocation)) {
+      networkFileLocation = Paths.get(CURRENT_PATH.toString(), MATSIM_DEFAULT_NETWORK).toString();
+    }      
+    return Paths.get(networkFileLocation).normalize();                        
+  }
+
+  /** Generate a MATSim configuration in memory based on command line arguments.
    * 
    * @param keyValueMap to extract command line arguments from
    * @return created MATSim config instance, null if unable to create
    */  
   public static Optional<Config> createConfigurationFromCommandLine(final Map<String, String> keyValueMap) {
     Config config = null;
+    
+    /* mode specific base config template */
     try {
-      config = createDefaultCarConfiguration();
+      var modesType = PlanitAurinMatsimHelper.parseModesType(keyValueMap);
+      switch (modesType) {
+      case CAR_ONLY:
+        config = createDefaultCarSimConfiguration(); 
+        break;
+      case CAR_PT_TELEPORT:
+        config = createDefaultCarSimPtTeleportConfiguration();
+        break;
+      default:
+        throw new PlanItException("Only car, or car with public transport as teleportation are currently supported, consider using a different --modes values than %s", keyValueMap.get(MODES_KEY));
+      }
     }catch(Exception e) {
       LOGGER.severe(e.getMessage());
       LOGGER.severe("Unable to create default MATSim car configuration file to supplement with command line arguments ");
@@ -697,8 +781,8 @@ public class PlanitAurinMatsimHelper {
     PlanitAurinMatsimHelper.configureIterationsMax(config,keyValueMap);
     
     return Optional.of(config);
-  }  
-  
+  }
+
   /** Generate a MATSim configuration in memory based on config file(s). 
    * 
    * @param configFile location to parse base config file from
@@ -715,28 +799,6 @@ public class PlanitAurinMatsimHelper {
     return Optional.of(config);
   }
 
-  /** Verify if population (plans) is to be down sampled
-   * 
-   * @param keyValueMap to check for
-   * @return true when down sampling is enable, false otherwise
-   */
-  public static boolean isPopulationPlansDownSampled(Map<String, String> keyValueMap) {
-    if(!keyValueMap.containsKey(PLANS_SAMPLE_KEY)) {
-      return false;
-    }
-    
-    try {
-      double downSamplingFactor = Double.parseDouble(keyValueMap.get(PLANS_SAMPLE_KEY));
-      if(downSamplingFactor>1) {
-        LOGGER.warning("IGNORED: Plans down sampling percentage is larger than 1, should be between 0 and 1");  
-      }
-      return (downSamplingFactor + Precision.EPSILON_3) < 1;
-    }catch(Exception e) {
-      LOGGER.warning("IGNORED: Plans down sampling percentage is not a valid floating point value");
-      return false;
-    }
-  }
-  
   /** A plans or populations file cannot be downsampled on the fly and conduct a simulation. Therefore it is created
    * separately via this method based on the original plans file from the command line arguments and the provided output 
    * directory to store it in. The original plans file name is supplemented with the sample size of the new population to create
@@ -762,5 +824,20 @@ public class PlanitAurinMatsimHelper {
       return updatedPlansFileLocationAsPath;
     }
     return null;
-  }  
+  }
+
+  /** Conduct a clean on MATSim network and persist result in location of where the MATSim network was sourced from (append "_cleaned" to origin name in the process)
+   * 
+   * @param matsimNetwork MATSim network to clean
+   */
+  public static void cleanAndPersistMatsimNetwork(Map<String, String> keyValueMap, org.matsim.api.core.v01.network.Network matsimNetwork) {
+    LOGGER.info("Cleaning MATSim network");
+    new org.matsim.core.network.algorithms.NetworkCleaner().run(matsimNetwork);      
+    Path networkFileLocationAsPath = PlanitAurinMatsimHelper.parseNetworkFileLocation(keyValueMap);
+    var originalFileName = networkFileLocationAsPath.getFileName().toString();
+    var cleanedNetworkFileName = new StringBuilder().append(originalFileName.substring(0, originalFileName.lastIndexOf('.'))).append("_cleaned").append(originalFileName.substring(originalFileName.lastIndexOf('.'))).toString();
+    var networkCleanedPath = Path.of(networkFileLocationAsPath.getParent().toString(),cleanedNetworkFileName);
+    LOGGER.info(String.format("Persisting cleaned MATSim network as %s",networkCleanedPath.toAbsolutePath().toString()));
+    org.matsim.core.network.NetworkUtils.writeNetwork(matsimNetwork, networkCleanedPath.toString());
+  }
 }

@@ -62,7 +62,7 @@ When configuring the simulation via command line options directly, not using a c
  * **--crs**      *Format: *"epsg:<xyz>"*. Default: WGS84 (EPSG:4326). Indicates the coordinate reference system to use in MATSim internally
  * **--network**    *Format: <path to the network file>*. Default: cwd such that *"./network.xml"*
  * **--network_crs**     *Format: "epsg:<xyz>"*. Default: unchanged. Coordinate reference system of the network file, converted to *--crs* in simulation if different
- * **--network_clean**    *Format: options: [yes, no].* Default: no. Applies a network clean operation on memory model of network before simulating. Can be used to remove unreachable links if needed 
+ * **--network_clean**    *Format: options: [yes, no].* Default: no. When yes, apply a network clean operation on memory model of network before simulating, persists result under original network input location when possible. Can be used to remove unreachable links if needed
  * **--plans**    *Format: <path to the activities file>*. Default: the cwd such that *"./plans.xml"*
  * **--plans_crs**    *Format: "epsg:<xyz>*. Default: unchanged. Coordinate reference system of the plans file, converted to *--crs* in simulation if different
  * **--plans_sample**    *Format: between 0 and 1.* Default: 1. Sample of the population plans applied in simulation. When in config mode, downsampled plan is persisted as well

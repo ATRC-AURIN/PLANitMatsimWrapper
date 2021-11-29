@@ -48,7 +48,7 @@ import org.goplanit.utils.exceptions.PlanItException;
  * <li>--crs                Format: "epsg:xyz". Default: WGS84 (EPSG:4326). Indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234.</li>
  * <li>--network            Format: <i>path</i> to the network file. Default: cwd under "./network.xml"</li>
  * <li>--network_crs        Format: "epsg:xyz". Default: unchanged. Coordinate reference system of the network file, converted to --crs in simulation if different</li>
- * <li>--network_clean      Options: [yes, no]. Default: no. Applies a network clean operation on memory model of network before simulating. Can be used to remove unreachable links if needed</li> 
+ * <li>--network_clean      Options: [yes, no]. Default: no. When yes, apply a network clean operation on memory model of network before simulating, persists result under original network input location when possible. Can be used to remove unreachable links if needed</li> 
  * <li>--plans              Format: <i>path</i> to the activities file. Default: the cwd under "./plans.xml"</li>
  * <li>--plans_crs          Format: "epsg:xyz. Default: unchanged. Coordinate reference system of the plans file, converted to --crs in simulation if different</li>
  * <li>--plans_sample       Format: between 0 and 1. Default: 1. Sample of the population plans applied in simulation. When in config mode, downsampled plan is persisted as well</li>
@@ -136,7 +136,7 @@ public class PlanitAurinMatsimMain {
     
     /* clean network on the fly if required */
     if(PlanitAurinMatsimHelper.isNetworkCleanActivated(keyValueMap)) {
-      new org.matsim.core.network.algorithms.NetworkCleaner().run(scenario.getNetwork());
+      PlanitAurinMatsimHelper.cleanAndPersistMatsimNetwork(keyValueMap, scenario.getNetwork());
     }
             
     /* simulation */
