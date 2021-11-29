@@ -18,7 +18,9 @@ To service both needs this wrapper exposes two main features:
 
 This approach allows a user to not bother with dealing with any MATSim config file and instead rely on the out-of-the-box predefined settings of the wrapper, or alternatively, let the wrapper generate a config file based on its predefined settings, adjust this file to suit the user's needs, and then conduct a simulation, or provide a completely custom configuration. The latter requires the most in-depth knowledge of MATSim whereas the first option requires little to no knowledge of MATSim.
 
-> Implementation of this wrapper is partially funded by the University of Sydney and the Australian Transport Research Cloud ([ATRC](https://ardc.edu.au/project/australian-transport-research-cloud-atrc/)). ATRC is a project instigated by the Australian Research Data Cloud ([ARDC](www.ardc.edu.au)).
+> This repository has been implemented by the University of Sydney for the ATRC project. The ATRC is a project lead by the Australian Urban Research Infrastructure Network (AURIN) and is supported by the Australian Research Data Commons (ARDC). AURIN and the ARDC are funded by the National Collaborative Research Infrastructure Strategy (NCRIS).  
+ATRC Investment: https://doi.org/10.47486/PL104  
+ATRC RAiD: https://hdl.handle.net/102.100.100/102.100.100/399880 
 
 ## Getting started
 
