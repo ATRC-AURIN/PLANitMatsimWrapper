@@ -47,7 +47,7 @@ public class MatsimWrapperCarSimPtTeleportTest {
     try {
       
       double downSampleFactor = 1;
-      int iterationsMax = 2;
+      int iterationsMax = 1;
       
       int linkStatsAverageInterval = 1;
       int linkStatsWriteInterval = 1;

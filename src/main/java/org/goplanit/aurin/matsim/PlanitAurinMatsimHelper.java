@@ -527,7 +527,7 @@ public class PlanitAurinMatsimHelper {
     
     Config config = ConfigUtils.createConfig();    
     ConfigUtils.loadConfig(config, configFileLocation.toAbsolutePath().toString());
-    
+
     /* clean up by deleting temporary file if needed*/
     if(UriUtils.isInJar(baseConfigUri)){
       LOGGER.fine(String.format("deleting local temp file %s",configFileLocation.toString()));

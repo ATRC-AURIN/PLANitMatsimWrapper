@@ -123,7 +123,7 @@ public class PlanitAurinMatsimMain {
         LOGGER.info(String.format("Running MATSim simulation using command line configuration options"));
         config = PlanitAurinMatsimHelper.createConfigurationFromCommandLine(keyValueMap);
     }  
-    config.ifPresentOrElse((theConfig) -> runSimulation(theConfig, keyValueMap), () -> LOGGER.severe("Unable to run MATSim simulation, configuration not available"));        
+    config.ifPresentOrElse((theConfig) -> runSimulation(theConfig, keyValueMap), () -> LOGGER.severe("Unable to run MATSim simulation, configuration not available"));    
   }
 
   /** Conduct a MATSim simulation based on the provided configuration.
