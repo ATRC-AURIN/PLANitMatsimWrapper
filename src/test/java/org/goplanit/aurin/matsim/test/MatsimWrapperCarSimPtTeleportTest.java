@@ -26,6 +26,8 @@ public class MatsimWrapperCarSimPtTeleportTest {
   private static final URL CLEANED_NETWORK_URL = ResourceUtils.getResourceUrl("./Melbourne/car_pt_simple_melbourne_network_cleaned.xml");
   private static final URL PLANS_URL = ResourceUtils.getResourceUrl("./Melbourne/plans_victoria_car_pt_tele.xml");
   private static final URL ACTIVITY_CONFIG_URL = ResourceUtils.getResourceUrl("./Melbourne/activity_config.xml");
+  private static final URL PT_STOPS_CSV_URL = ResourceUtils.getResourceUrl("./Melbourne/melbourne_coarse_ptstops.csv");
+  
   
   private static final File MATSIM_TMP_DIR = new File("./output/car_pt_tele_tmp");
 
@@ -39,14 +41,12 @@ public class MatsimWrapperCarSimPtTeleportTest {
   }
   
   /**
-   * Test with local inputs via command line call. Current plans file is already a sample, so no need to 
-   * down sample scale at this point
+   * Test with local inputs via command line call. We use public transport teleportation without considering stops here
    */
   @Test
-  public void matsimSimulation() {
+  public void matsimSimulationWithPtWithoutStops() {
     try {
       
-      double downSampleFactor = 1;
       int iterationsMax = 1;
       
       int linkStatsAverageInterval = 1;
@@ -76,10 +76,6 @@ public class MatsimWrapperCarSimPtTeleportTest {
               "epsg:3112",              
               "--activity_config",
               UrlUtils.asLocalPath(ACTIVITY_CONFIG_URL).toString(),
-              "--flowcap_factor",
-              String.valueOf(downSampleFactor),
-              "--storagecap_factor",
-              String.valueOf(downSampleFactor),
               "--link_stats",
               String.valueOf(linkStatsAverageInterval)+"," + String.valueOf(linkStatsWriteInterval),              
               "--iterations_max",
@@ -91,6 +87,57 @@ public class MatsimWrapperCarSimPtTeleportTest {
       fail("Error when testing Aurin MATSim simulation Wrapper - MatsimWrapperCarSimPtTeleportTest");
     }
   }
+  
+  /**
+   * Test with local inputs via command line call. Current plans file is already a sample, so no need to 
+   * down sample scale at this point. We use public transport teleportation with considering stops activating the PtMatrixrouter of MATSim
+   */
+  @Test
+  public void matsimSimulationWithPtWithStops() {
+    try {
+      
+      final int iterationsMax = 1;
+      
+      final int linkStatsAverageInterval = 1;
+      final int linkStatsWriteInterval = 1;
+        
+      // java -jar PLANitAurinMatsim_version_.jar --type simulation --modes car_sim_pt_teleport --crs epsg:3112 
+      //      --network "..\src\test\resources\Melbourne\car_pt_tele_simple_melbourne_network_cleaned.xml" --network_crs epsg:3112
+      //      --plans "..\src\test\resources\Melbourne\plans_victoria_car_pt_tele.xml" --plans_crs epsg:3112 --activity_config
+      //      "..\src\test\resources\Melbourne\activity_config.xml" --link_stats 1,1 --pt-stops-csv "./Melbourne/melbourne_coarse_ptstops.csv" --iterations_max 2
+      PlanitAurinMatsimMain.main(
+          new String[]{
+              "--type",
+              "simulation",
+              "--modes",
+              "car_sim_pt_teleport",
+              "--crs",
+              "epsg:3112",              
+              "--network",
+              UrlUtils.asLocalPath(CLEANED_NETWORK_URL).toString(),
+              "--network_clean",
+              "no",
+              "--network_crs",
+              "epsg:3112",
+              "--plans",
+              UrlUtils.asLocalPath(PLANS_URL).toString(),
+              "--plans_crs",
+              "epsg:3112",              
+              "--activity_config",
+              UrlUtils.asLocalPath(ACTIVITY_CONFIG_URL).toString(),
+              "--link_stats",
+              String.valueOf(linkStatsAverageInterval)+"," + String.valueOf(linkStatsWriteInterval),
+              "--pt-stops-csv",
+              UrlUtils.asLocalPath(PT_STOPS_CSV_URL).toString(),
+              "--iterations_max",
+              String.valueOf(iterationsMax)});     
+      
+      
+    } catch (Exception e) {
+      e.printStackTrace();
+      fail("Error when testing Aurin MATSim simulation Wrapper - MatsimWrapperCarSimPtTeleportTest");
+    }
+  }  
   
   /**
    * Test to generate a configuration file based on the wrapper's tailored config file and the additional command line

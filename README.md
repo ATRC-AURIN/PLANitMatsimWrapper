@@ -78,4 +78,9 @@ When configuring the simulation via command line options directly, not using a c
 
 The *--modes* option defines what modes are simulated (car only, or car and pt) and how they are simulated. Currently only cars can be simulated, i.e., we only support *--modes car_sim* for now. The public transport support (both teleported and simulated is to be added at a later stage). If absent it defaults to *--modes car_sim.*
 
-The *--startttime* and *--endtime* option can be omitted in which case the entire day, i.e., all activities, will be simulated. 
+The *--startttime* and *--endtime* option can be omitted in which case the entire day, i.e., all activities, will be simulated.
+
+In addition to these general options that can always be used when the type is set to simulation; there are a number of conditional options available too. These are listed below
+ * **--pt-stops-csv**   *Condition: --modes car_sim_pt_teleport. Format: <i>path</i> to the ptStops CSV file*.  Default: none. Location to obtain stop locations from in CSV format for PtMatrixBasedRouter
+ 
+The *--pt-stops-csv* does two things. First it attempts to parse the provided file. Second it implicitly assumes the user would like to use the stop information to construct the pt teleportation travel times rather than the default as-the-crow-flies origin-destination travel times for pt that would otherwise be used in absence of any stop information. Since using a stop-to-stop travel time matrix is generally always an improvement it overrides the default behaviour and activated the MATSim PtMatrixBasedRouter, see also [MatrixBasedPtRouter](https://github.com/matsim-org/matsim-libs/tree/master/contribs/matrixbasedptrouter/src/main/java/org/matsim/contrib/matrixbasedptrouter) 

@@ -9,6 +9,8 @@ import java.util.Optional;
 import java.util.logging.Logger;
 
 import org.matsim.api.core.v01.Scenario;
+import org.matsim.contrib.matrixbasedptrouter.MatrixBasedPtModule;
+import org.matsim.contrib.matrixbasedptrouter.MatrixBasedPtRouterConfigGroup;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigWriter;
 import org.matsim.core.controler.Controler;
@@ -37,14 +39,14 @@ import org.goplanit.utils.exceptions.PlanItException;
  * when choosing {@code config} the configurable options are included in the config file that is generated as well as the defaults that otherwise would be
  * applied by this wrapper's simulation runs (currently car only) , otherwise it is treated the same as {@code default_config}. In other words when using default_config
  * it provides the user with a template with all default options explicitly listed, whereas config provides the tailored configuration file used by this wrapper including 
- * modifications made by command line options provided.
+ * modifications made by (under simulation listed) command line options provided.
  * <p>
  * When choosing {--type @code simulation}, one can either utilise MATsim config files to configure the simulation or the exposed
  * command line configuration options. When configuring the simulation here the default simulator of MATSim is used (qsim). 
  * The following command line options are available when configuring a simulation via the command line:
  * 
  * <ul>
- * <li>--modes              Options [car_sim, car_sim_pt_teleport, car_pt_sim]. Default car_sim</li>
+ * <li>--modes              Options [car_sim, car_sim_pt_teleport, car_pt_sim]. Default car_sim. Defines the type of simulation to configure for and/or run</li>
  * <li>--crs                Format: "epsg:xyz". Default: WGS84 (EPSG:4326). Indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234.</li>
  * <li>--network            Format: <i>path</i> to the network file. Default: cwd under "./network.xml"</li>
  * <li>--network_crs        Format: "epsg:xyz". Default: unchanged. Coordinate reference system of the network file, converted to --crs in simulation if different</li>
@@ -61,12 +63,22 @@ import org.goplanit.utils.exceptions.PlanItException;
  * <li>--iterations_max     Format: positive number. Default: none. Maximum number of iterations the simulation will run before terminating. Mandatory</li>
  * <li>--output             Format: <i>directory</i>.  Default: "./output". Location to store the generated simulation results or configuration file(s).</li>
  * </ul> 
- * <p>
+ * 
  * The {@code --modes} option defines what modes are simulated (car only, or car and pt) and how they are simulated. Currently only cars can be simulated, i.e., 
  * we only support {@code --modes car_sim}. The public transport support (both teleported and simulated is to be added at a later stage). If absent it defaults to
  * {@code --modes car_sim}
  * <p>
- * The {@code --startttime} and {@code --endtime} option can be omitted in which case the entire day, i.e., all activities, will be simulated. 
+ * The {@code --startttime} and {@code --endtime} option can be omitted in which case the entire day, i.e., all activities, will be simulated.
+ * <p>
+ * 
+ * In addition to these general options that can always be used when the type is set to simulation; there are a number of conditional options available too. These are listed below
+ * <ul>
+ * <li>--pt-stops-csv       Condition: --modes car_sim_pt_teleport. Format: <i>path</i> to the ptStops CSV file.  Default: none. Location to obtain stop locations from in csv format for PtMatrixBasedRouter</li>
+ * </ul> 
+ * 
+ * The {@code --pt-stops-csv} does two things. First it attempts to parse the provided file. Second it implicitly assumes the user would like to use the stop information to construct the pt teleportation travel times rather than
+ * the default as-the-crow-flies origin-destination travel times for pt that would otherwise be used in absence of any stop information. Since using a stop-to-stop travel time matrix is generally always an improvement it overrides the default behaviour and activated the MATSim
+ * PtMatrixBasedRouter, see also {@link https://github.com/matsim-org/matsim-libs/tree/master/contribs/matrixbasedptrouter/src/main/java/org/matsim/contrib/matrixbasedptrouter}
  * <p>
  * In case the user decides not to use these shortcuts but instead prefers its own configuration file(s) that is also possible, in which case the following two commands should be used:
  *  <ul>
@@ -103,6 +115,19 @@ public class PlanitAurinMatsimMain {
 
   }
   
+  /** Add modules programmatically in case configuration requires it 
+   * 
+   * @param controller to override modules on (if any)
+   * @param config to extract information from
+   */
+  private static void configureOverridingModules(final Controler controller, final Config config) {
+    
+    /* Matrix based pt router requires overriding routing module (if it is configured) */
+    if(config.getModules().containsKey(MatrixBasedPtRouterConfigGroup.GROUP_NAME)) {
+      controller.addOverridingModule(new MatrixBasedPtModule());
+    }
+  }
+
   /** Conduct a MATSim simulation based on the provided command line configuration information. 
    * 
    * @param keyValueMap to use
@@ -110,18 +135,18 @@ public class PlanitAurinMatsimMain {
    */  
   private static void runSimulation(final Map<String, String> keyValueMap, Path outputDir) {
     if(outputDir == null) {
-      outputDir = PlanitAurinMatsimHelper.DEFAULT_OUTPUT_PATH;
+      outputDir = MatsimHelper.DEFAULT_OUTPUT_PATH;
     }
     
     /* simulation is using MATSim config files to configure everything or use command line arguments instead */
     Optional<Config> config = null;      
-    if(PlanitAurinMatsimHelper.isSimulationConfigurationFileBased(keyValueMap)) {
+    if(MatsimHelper.isSimulationConfigurationFileBased(keyValueMap)) {
       LOGGER.info(String.format("Running MATSim simulation using command line configuration file"));
-      config = PlanitAurinMatsimHelper.createConfigurationFromFiles(
-          PlanitAurinMatsimHelper.getConfigFileLocation(keyValueMap), PlanitAurinMatsimHelper.getOverrideConfigFileLocation(keyValueMap));
+      config = MatsimHelper.createConfigurationFromFiles(
+          MatsimHelper.getConfigFileLocation(keyValueMap), MatsimHelper.getOverrideConfigFileLocation(keyValueMap));
     }else {
         LOGGER.info(String.format("Running MATSim simulation using command line configuration options"));
-        config = PlanitAurinMatsimHelper.createConfigurationFromCommandLine(keyValueMap);
+        config = MatsimHelper.createConfigurationFromCommandLine(keyValueMap);
     }  
     config.ifPresentOrElse((theConfig) -> runSimulation(theConfig, keyValueMap), () -> LOGGER.severe("Unable to run MATSim simulation, configuration not available"));    
   }
@@ -135,12 +160,17 @@ public class PlanitAurinMatsimMain {
     Scenario scenario = ScenarioUtils.loadScenario(config);
     
     /* clean network on the fly if required */
-    if(PlanitAurinMatsimHelper.isNetworkCleanActivated(keyValueMap)) {
-      PlanitAurinMatsimHelper.cleanAndPersistMatsimNetwork(keyValueMap, scenario.getNetwork());
+    if(MatsimHelper.isNetworkCleanActivated(keyValueMap)) {
+      MatsimHelper.cleanAndPersistMatsimNetwork(keyValueMap, scenario.getNetwork());
     }
             
-    /* simulation */
+    /* controller */
     Controler controller = new Controler(scenario);
+    
+    /* special module configuration */
+    configureOverridingModules(controller, config);
+    
+    /* simulation */
     controller.run();    
   }
 
@@ -154,18 +184,18 @@ public class PlanitAurinMatsimMain {
    */
   private static String generateMatsimConfiguration(final Map<String, String> keyValueMap, Path outputDir) throws PlanItException {
     if(outputDir == null) {
-      outputDir = PlanitAurinMatsimHelper.DEFAULT_OUTPUT_PATH;
+      outputDir = MatsimHelper.DEFAULT_OUTPUT_PATH;
     }
     
     /* DEFAULT MATSIM FULL CONFIG */
-    String outputFileLocation = Path.of(outputDir.toString(), PlanitAurinMatsimHelper.DEFAULT_MATSIM_CONFIG_FILE).normalize().toAbsolutePath().toString();
-    if( PlanitAurinMatsimHelper.TYPE_DEFAULT_CONFIG_VALUE.equals(keyValueMap.get(PlanitAurinMatsimHelper.TYPE_KEY))){
+    String outputFileLocation = Path.of(outputDir.toString(), MatsimHelper.DEFAULT_MATSIM_CONFIG_FILE).normalize().toAbsolutePath().toString();
+    if( MatsimHelper.TYPE_DEFAULT_CONFIG_VALUE.equals(keyValueMap.get(MatsimHelper.TYPE_KEY))){
       org.matsim.run.CreateFullConfig.main(new String[] {outputFileLocation});
     }
     /* CUSTOMISED MATSIM CONFIG */
-    else if(PlanitAurinMatsimHelper.TYPE_CONFIG_VALUE.equals(keyValueMap.get(PlanitAurinMatsimHelper.TYPE_KEY))) {
+    else if(MatsimHelper.TYPE_CONFIG_VALUE.equals(keyValueMap.get(MatsimHelper.TYPE_KEY))) {
       
-      Config config = PlanitAurinMatsimHelper.createConfigurationFromCommandLine(keyValueMap).orElseThrow(() -> new PlanItException("Unable to generate MATSim configuration"));                      
+      Config config = MatsimHelper.createConfigurationFromCommandLine(keyValueMap).orElseThrow(() -> new PlanItException("Unable to generate MATSim configuration"));                      
       new ConfigWriter(config).write(outputFileLocation);
     }
     return outputFileLocation;
@@ -197,41 +227,41 @@ public class PlanitAurinMatsimMain {
 
       } else {
 
-        if(!keyValueMap.containsKey(PlanitAurinMatsimHelper.TYPE_KEY)) {
+        if(!keyValueMap.containsKey(MatsimHelper.TYPE_KEY)) {
           LOGGER.warning("--type argument missing, unable to proceed with MATSim simulation wrapper");
           return;
         }
         
         /* DOWN SAMPLING OF PLANS/POPULATION */
-        Path outputDir = PlanitAurinMatsimHelper.parseOutputDirectory(keyValueMap);
-        if(PlanitAurinMatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
+        Path outputDir = MatsimHelper.parseOutputDirectory(keyValueMap);
+        if(MatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
           /* down sampling cannot be done in memory. Requires creating new plans file
            * So create new down sampled plans file and overwrite original plans file location so it is used
            * for simulation (if that is the type) */
-          Path downSampledPopulationPath = PlanitAurinMatsimHelper.createDownSampledPopulation(keyValueMap, outputDir);
+          Path downSampledPopulationPath = MatsimHelper.createDownSampledPopulation(keyValueMap, outputDir);
           if(downSampledPopulationPath != null) {
-            keyValueMap.put(PlanitAurinMatsimHelper.PLANS_KEY, downSampledPopulationPath.toString());
+            keyValueMap.put(MatsimHelper.PLANS_KEY, downSampledPopulationPath.toString());
           }
         }
         
         /* TYPE: CONFIGURATION ONLY */ 
-        if(PlanitAurinMatsimHelper.isConfigurationType(keyValueMap)) {
+        if(MatsimHelper.isConfigurationType(keyValueMap)) {
           
           final String outputFileLocation = generateMatsimConfiguration(keyValueMap, outputDir);
           LOGGER.info(String.format("Generated MATSim configuration file: %s",outputFileLocation));
-          if(PlanitAurinMatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
-            LOGGER.info(String.format("Generated downsampled MATSim plans file: %s",keyValueMap.get(PlanitAurinMatsimHelper.PLANS_KEY))); 
+          if(MatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
+            LOGGER.info(String.format("Generated downsampled MATSim plans file: %s",keyValueMap.get(MatsimHelper.PLANS_KEY))); 
           }
           
         }
         /* TYPE: SIMULATION ONLY */
-        else if(PlanitAurinMatsimHelper.isSimulationType(keyValueMap)) {
+        else if(MatsimHelper.isSimulationType(keyValueMap)) {
           
           LOGGER.info(String.format("Running MATSim simulation"));
           runSimulation(keyValueMap, outputDir);
-          if(PlanitAurinMatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
+          if(MatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
             /* any temporary downsampled path should be deleted upon termination of the simulation */
-            Files.delete(Path.of(keyValueMap.get(PlanitAurinMatsimHelper.PLANS_KEY)));
+            Files.delete(Path.of(keyValueMap.get(MatsimHelper.PLANS_KEY)));
           }          
           
         }else {

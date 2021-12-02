@@ -11,7 +11,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Logger;
 
+import org.matsim.api.core.v01.TransportMode;
 import org.matsim.api.core.v01.population.Population;
+import org.matsim.contrib.matrixbasedptrouter.MatrixBasedPtRouterConfigGroup;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.population.PopulationUtils;
@@ -28,10 +30,10 @@ import org.goplanit.utils.resource.ResourceUtils;
  * @author markr
  *
  */
-public class PlanitAurinMatsimHelper {
+public class MatsimHelper {
   
   /** the logger to use */
-  private static final Logger LOGGER = Logger.getLogger(PlanitAurinMatsimHelper.class.getCanonicalName());
+  private static final Logger LOGGER = Logger.getLogger(MatsimHelper.class.getCanonicalName());
   
   /** Path from which application was invoked */
   public static final Path CURRENT_PATH = Path.of(".").toAbsolutePath();
@@ -149,10 +151,10 @@ public class PlanitAurinMatsimHelper {
   //----------------------------------------------------  
   
   /** the string representation used in MATSim for the default qsim start time*/
-  protected static String MATSIM_DEFAULT_STARTTIME = "00:00:00";
+  public static String MATSIM_DEFAULT_STARTTIME = "00:00:00";
   
   /** the string representation used in MATSim for the default qsim end time*/
-  protected static String MATSIM_DEFAULT_ENDTIME = MATSIM_DEFAULT_STARTTIME;  
+  public static String MATSIM_DEFAULT_ENDTIME = MATSIM_DEFAULT_STARTTIME;  
   
   /** Key reflecting the start time to use in simulation */
   public static final String STARTTIME_KEY = "starttime";    
@@ -165,7 +167,7 @@ public class PlanitAurinMatsimHelper {
   //----------------------------------------------------  
   
   /** the default maximum number of iterations run when not set by user */
-  protected static Integer DEFAULT_ITERATIONS_MAX = 10;
+  public static Integer DEFAULT_ITERATIONS_MAX = 10;
   
   /** Key reflecting the maximum number of iterations to run in simulation */
   public static final String ITERATIONS_MAX_KEY = "iterations_max";  
@@ -203,7 +205,16 @@ public class PlanitAurinMatsimHelper {
   
   /** Key reflecting the linkStats configuration to apply to the simulation */
   public static final String LINK_STATS_KEY = "link_stats";  
-    
+
+  //----------------------------------------------------
+  //-------- PT MATRIX BASED ROUTER --------------------
+  //----------------------------------------------------
+
+  /** Key reflecting the location of the CSV file containing the supported pt stops for the network*/
+  public static final String PT_STOPS_CSV_KEY = "pt-stops-csv";
+  
+  
+  
   /** create a local file in the given directory and file name location for a resource that is available from within a jar file
    * 
    * @param directory to use
@@ -499,14 +510,48 @@ public class PlanitAurinMatsimHelper {
   }
   
   /**
-   * Create the in-memory configuration based on provided config file location.
+   * We enable MATSim's pt matrix based routing only when any of the required input files for PtMatrixBased simulation are configured, i.e.,
+   * the --pt-stops-csv is present.
+   *   
+   * @param config to configure
+   * @param keyValueMap to extract settings from
+   */
+  private static void configurePtMatrixRouter(final Config config, final Map<String, String> keyValueMap) {
+    String ptStopsCsvValue = keyValueMap.get(PT_STOPS_CSV_KEY);
+    if(StringUtils.isNullOrBlank(ptStopsCsvValue )) {
+      LOGGER.info(String.format("No pt stops CSV provided, MATSim matrix based router not activated"));
+      return;
+    }
+        
+    /* parse pt stops and configure PtMatrixBased router */
+    var configGroup = new MatrixBasedPtRouterConfigGroup();
+    configGroup.setPtStopsInputFile(ptStopsCsvValue);
+    configGroup.setUsingTravelTimesAndDistances(false);
+    
+    /* in absnece of a stop-to-stop trevl tmie matrix, MATSim will generate one, but for that to work it needs a teleported mode speed to be set explicitly
+     * if not, it simply crashes hard. therefore, set it here explicitly */
+    var ptModeRoutingParams = config.plansCalcRoute().getModeRoutingParams().get(TransportMode.pt);
+    if(ptModeRoutingParams.getTeleportedModeSpeed()==null) {
+      LOGGER.warning("MATSim teleported mode free speed not set in config file. Consider setting it when using PtMatrixRouting, instead inferring speed from freespeed factor instead");
+      
+      final double carMaxSpeedEstimate = 60.0;
+      double freeSpeedToUse = carMaxSpeedEstimate / ptModeRoutingParams.getTeleportedModeFreespeedFactor();
+      ptModeRoutingParams.setTeleportedModeSpeed(freeSpeedToUse); //meter per second
+      ptModeRoutingParams.setTeleportedModeFreespeedFactor(null);
+      LOGGER.warning(String.format("MATSim teleported mode free speed (car reference speed estimate / free speed factor) set to %.2f / %.2f  = %.2f m/s",carMaxSpeedEstimate, ptModeRoutingParams.getTeleportedModeFreespeedFactor(),freeSpeedToUse));
+    }
+    config.addModule(configGroup);
+  }
+
+  /**
+   * Create the in-memory configuration based on provided config file location where all user options are not predicated on other user options, i.e., they are unconditional.
    * 
    * @param configFileTemplateLocation to create in memory configuration for
    * @throws URISyntaxException when invalid URI 
    * @throws PlanItException when default config cannot be located
    * @throws IOException thrown if error
    */
-  private static Config createConfiguration(final String configFileTemplateLocation) throws URISyntaxException, PlanItException, IOException {
+  private static Config createConfigurationFromFile(final String configFileTemplateLocation) throws URISyntaxException, PlanItException, IOException {
     URI baseConfigUri = ResourceUtils.getResourceUri(configFileTemplateLocation);
     LOGGER.fine(String.format("configuration template sourced from %s",baseConfigUri.toString()));
     
@@ -547,7 +592,7 @@ public class PlanitAurinMatsimHelper {
    */
   private static Config createDefaultCarSimConfiguration() throws URISyntaxException, PlanItException, IOException {
     LOGGER.info("Using PLANit default car only configuration template");
-    return createConfiguration(DEFAULT_CAR_CONFIG_RESOURCE);
+    return createConfigurationFromFile(DEFAULT_CAR_CONFIG_RESOURCE);
   }
   
   /**
@@ -560,7 +605,7 @@ public class PlanitAurinMatsimHelper {
    */
   private static Config createDefaultCarSimPtTeleportConfiguration() throws URISyntaxException, PlanItException, IOException {
     LOGGER.info("Using PLANit default car simulation with teleported public transport configuration template");
-    return createConfiguration(DEFAULT_CAR_SIM_PT_TELE_CONFIG_RESOURCE);
+    return createConfigurationFromFile(DEFAULT_CAR_SIM_PT_TELE_CONFIG_RESOURCE);
   }  
 
   /** Verify if the simulation is based on using MATSim configuration file(s) or using command line arguments
@@ -745,8 +790,8 @@ public class PlanitAurinMatsimHelper {
     Config config = null;
     
     /* mode specific base config template */
-    try {
-      var modesType = PlanitAurinMatsimHelper.parseModesType(keyValueMap);
+    var modesType = MatsimHelper.parseModesType(keyValueMap);
+    try {      
       switch (modesType) {
       case CAR_ONLY:
         config = createDefaultCarSimConfiguration(); 
@@ -763,22 +808,32 @@ public class PlanitAurinMatsimHelper {
       return Optional.empty();
     }
     
-    /* do this first to ensure that other options are not overwritten by this additional config file in case
-     * the user includes more than just the activity configuration portion */
-    PlanitAurinMatsimHelper.configureActivityConfig(config,keyValueMap);
+    /* unconditional configuration */
+    {
+      /* do this first to ensure that other options are not overwritten by this additional config file in case
+       * the user includes more than just the activity configuration portion */
+      MatsimHelper.configureActivityConfig(config,keyValueMap);
+      
+      MatsimHelper.configureModes(config, keyValueMap);
+      MatsimHelper.configureCrs(config,keyValueMap);
+      MatsimHelper.configureNetwork(config,keyValueMap);
+      MatsimHelper.configureNetworkCrs(config,keyValueMap);
+      MatsimHelper.configurePlans(config,keyValueMap);
+      MatsimHelper.configurePlansCrs(config,keyValueMap);  
+      MatsimHelper.configureStartTime(config,keyValueMap);
+      MatsimHelper.configureEndTime(config,keyValueMap);
+      MatsimHelper.configureFlowCapacityFactor(config,keyValueMap);
+      MatsimHelper.configureStorageCapacityFactor(config,keyValueMap);
+      MatsimHelper.configureLinkStats(config,keyValueMap);
+      MatsimHelper.configureIterationsMax(config,keyValueMap);      
+    }
     
-    PlanitAurinMatsimHelper.configureModes(config, keyValueMap);
-    PlanitAurinMatsimHelper.configureCrs(config,keyValueMap);
-    PlanitAurinMatsimHelper.configureNetwork(config,keyValueMap);
-    PlanitAurinMatsimHelper.configureNetworkCrs(config,keyValueMap);
-    PlanitAurinMatsimHelper.configurePlans(config,keyValueMap);
-    PlanitAurinMatsimHelper.configurePlansCrs(config,keyValueMap);  
-    PlanitAurinMatsimHelper.configureStartTime(config,keyValueMap);
-    PlanitAurinMatsimHelper.configureEndTime(config,keyValueMap);
-    PlanitAurinMatsimHelper.configureFlowCapacityFactor(config,keyValueMap);
-    PlanitAurinMatsimHelper.configureStorageCapacityFactor(config,keyValueMap);
-    PlanitAurinMatsimHelper.configureLinkStats(config,keyValueMap);
-    PlanitAurinMatsimHelper.configureIterationsMax(config,keyValueMap);
+    /* conditional configuration */
+    {
+      if(modesType.equals(ModesType.CAR_PT_TELEPORT)) {
+        MatsimHelper.configurePtMatrixRouter(config,keyValueMap);
+      }      
+    }
     
     return Optional.of(config);
   }
@@ -809,7 +864,7 @@ public class PlanitAurinMatsimHelper {
    * @return path to down sampled plans file
    */
   public static Path createDownSampledPopulation(Map<String, String> keyValueMap, Path outputDir) {
-    if(PlanitAurinMatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
+    if(MatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
       Path originalPlanFileLocationAsPath = extractPlansFileLocation(keyValueMap);
       double sampleSize = Double.parseDouble(keyValueMap.get(PLANS_SAMPLE_KEY));
       Population population = PopulationUtils.readPopulation(originalPlanFileLocationAsPath.toAbsolutePath().toString());
@@ -833,7 +888,7 @@ public class PlanitAurinMatsimHelper {
   public static void cleanAndPersistMatsimNetwork(Map<String, String> keyValueMap, org.matsim.api.core.v01.network.Network matsimNetwork) {
     LOGGER.info("Cleaning MATSim network");
     new org.matsim.core.network.algorithms.NetworkCleaner().run(matsimNetwork);      
-    Path networkFileLocationAsPath = PlanitAurinMatsimHelper.parseNetworkFileLocation(keyValueMap);
+    Path networkFileLocationAsPath = MatsimHelper.parseNetworkFileLocation(keyValueMap);
     var originalFileName = networkFileLocationAsPath.getFileName().toString();
     var cleanedNetworkFileName = new StringBuilder().append(originalFileName.substring(0, originalFileName.lastIndexOf('.'))).append("_cleaned").append(originalFileName.substring(originalFileName.lastIndexOf('.'))).toString();
     var networkCleanedPath = Path.of(networkFileLocationAsPath.getParent().toString(),cleanedNetworkFileName);
