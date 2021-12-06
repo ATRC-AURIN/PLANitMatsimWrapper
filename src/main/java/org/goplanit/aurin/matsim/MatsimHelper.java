@@ -23,6 +23,7 @@ import org.goplanit.utils.math.Precision;
 import org.goplanit.utils.misc.StringUtils;
 import org.goplanit.utils.misc.UriUtils;
 import org.goplanit.utils.resource.ResourceUtils;
+import org.goplanit.utils.unit.Unit;
 
 /**
  * Helper methods to configure the AURIN MATSim wrapper based on user arguments provided for this wrapper.
@@ -45,8 +46,8 @@ public class MatsimHelper {
   public static final String DEFAULT_CAR_SIM_PT_TELE_CONFIG_RESOURCE = "baseconfig_car_pt_tele.xml";  
   
   /** the default name for a MATSim configuration file*/
-  public static final String DEFAULT_MATSIM_CONFIG_FILE = "config.xml";  
-  
+  public static final String DEFAULT_MATSIM_CONFIG_FILE = "config.xml";
+    
   //----------------------------------------------------
   //-------- OUTPUT_PATH ---------------------------
   //----------------------------------------------------
@@ -213,7 +214,10 @@ public class MatsimHelper {
   /** Key reflecting the location of the CSV file containing the supported pt stops for the network*/
   public static final String PT_STOPS_CSV_KEY = "pt-stops-csv";
   
-  
+  /** Estimate of car teleported speed. Used to for example derive pt teleported speed (multiplied by factor) when
+   * including pt as teleported mode */
+  public static final double DEFAULT_CAR_TELEPORTED_SPEED_ESTIMATE = 60.0;   
+    
   
   /** create a local file in the given directory and file name location for a resource that is available from within a jar file
    * 
@@ -528,17 +532,24 @@ public class MatsimHelper {
     configGroup.setPtStopsInputFile(ptStopsCsvValue);
     configGroup.setUsingTravelTimesAndDistances(false);
     
-    /* in absnece of a stop-to-stop trevl tmie matrix, MATSim will generate one, but for that to work it needs a teleported mode speed to be set explicitly
+    /* in absence of a stop-to-stop travel time matrix, MATSim will generate one, but for that to work it needs a teleported mode speed to be set explicitly
      * if not, it simply crashes hard. therefore, set it here explicitly */
     var ptModeRoutingParams = config.plansCalcRoute().getModeRoutingParams().get(TransportMode.pt);
     if(ptModeRoutingParams.getTeleportedModeSpeed()==null) {
       LOGGER.warning("MATSim teleported mode free speed not set in config file. Consider setting it when using PtMatrixRouting, instead inferring speed from freespeed factor instead");
-      
-      final double carMaxSpeedEstimate = 60.0;
-      double freeSpeedToUse = carMaxSpeedEstimate / ptModeRoutingParams.getTeleportedModeFreespeedFactor();
-      ptModeRoutingParams.setTeleportedModeSpeed(freeSpeedToUse); //meter per second
-      ptModeRoutingParams.setTeleportedModeFreespeedFactor(null);
-      LOGGER.warning(String.format("MATSim teleported mode free speed (car reference speed estimate / free speed factor) set to %.2f / %.2f  = %.2f m/s",carMaxSpeedEstimate, ptModeRoutingParams.getTeleportedModeFreespeedFactor(),freeSpeedToUse));
+
+      try {
+        final double carMaxSpeedEstimate = Unit.KM_HOUR.convertTo(Unit.METER_SECOND, DEFAULT_CAR_TELEPORTED_SPEED_ESTIMATE);
+        double freeSpeedToUse = carMaxSpeedEstimate / ptModeRoutingParams.getTeleportedModeFreespeedFactor();
+
+        double configuredFactor = ptModeRoutingParams.getTeleportedModeFreespeedFactor();
+        ptModeRoutingParams.setTeleportedModeFreespeedFactor(null); // must be removed otherwise we can't set speed     
+        ptModeRoutingParams.setTeleportedModeSpeed(freeSpeedToUse); //meter per second
+        LOGGER.warning(String.format("MATSim teleported mode free speed (car reference speed estimate / free speed factor) set to %.2f / %.2f  = %.2f m/s",carMaxSpeedEstimate, configuredFactor,freeSpeedToUse));        
+      } catch (PlanItException e) {
+        LOGGER.severe(e.getMessage());
+        LOGGER.severe("Unable to convert speed from km/h to m/s");
+      }      
     }
     config.addModule(configGroup);
   }

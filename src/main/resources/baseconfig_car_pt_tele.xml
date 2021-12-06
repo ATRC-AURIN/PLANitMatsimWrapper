@@ -23,7 +23,7 @@
 	</module>
 	<module name="planscalcroute">
 		<param name="networkModes" value="car" />
-		<!-- pt teletportation configuration: if the router encounters a leg with mode pt, it generates a “teleportation” route whose
+		<!-- pt teletortation configuration: if the router encounters a leg with mode pt, it generates a “teleportation” route whose
          travel distance is the same as, and travel time is twice that of, a freespeed car route. This models public transit, assuming it travels along roughly the same routes as a car trip, but
          takes twice as long (cf. Reinhold, 2006)-->
     <parameterset type= "teleportedModeParameters" >
