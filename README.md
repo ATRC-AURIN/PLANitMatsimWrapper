@@ -72,7 +72,7 @@ When configuring the simulation via command line options directly, not using a c
  * **--starttime**    *Format: "hh:mm:ss".* Default:00:00:00. Start time of the simulation in, ignore activities in the plans file before this time.
  * **--endtime**    *Format: "hh:mm:ss".* Default:00:00:00. End time of the simulation in "hh:mm:ss" format, ignore activities in the plans file after this time
  * **--flowcap_factor**    *Format:* between 0 and 1. Default 1. Scale link flow capacity. Use icw down sampling of population plans to remain consistent
- * **--storagecap_factor*    *Format: between 0 and 1.* Default 1. Scale link storage capacity. Use icw down sampling of population plans to remain consistent
+ * **--storagecap_factor**    *Format: between 0 and 1.* Default 1. Scale link storage capacity. Use icw down sampling of population plans to remain consistent
  * **--iterations_max**    *Format: positive number.* Default: none. Maximum number of iterations the simulation will run before terminating. Mandatory
  * **--output** *Format: <path to desired output directory>.*  Default: *"./output"*. Location to store the generated simulation results or configuration file(s)
 
