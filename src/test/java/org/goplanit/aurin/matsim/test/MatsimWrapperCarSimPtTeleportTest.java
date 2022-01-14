@@ -20,7 +20,6 @@ import org.goplanit.utils.resource.ResourceUtils;
  */
 public class MatsimWrapperCarSimPtTeleportTest {
   
-  //private static final URL NETWORK_URL = ResourceUtils.getResourceUrl("./Melbourne/car_pt_simple_melbourne_network.xml");
   private static final URL CLEANED_NETWORK_URL = ResourceUtils.getResourceUrl("./Melbourne/car_pt_simple_melbourne_network_cleaned.xml");
   private static final URL PLANS_URL = ResourceUtils.getResourceUrl("./Melbourne/plans_victoria_car_pt_tele.xml");
   private static final URL ACTIVITY_CONFIG_URL = ResourceUtils.getResourceUrl("./Melbourne/activity_config.xml");

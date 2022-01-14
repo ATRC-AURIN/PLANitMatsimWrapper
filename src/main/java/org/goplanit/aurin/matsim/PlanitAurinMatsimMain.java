@@ -48,21 +48,23 @@ import org.goplanit.utils.exceptions.PlanItException;
  * <ul>
  * <li>--modes              Options [car_sim, car_sim_pt_teleport, car_pt_sim]. Default car_sim. Defines the type of simulation to configure for and/or run</li>
  * <li>--crs                Format: "epsg:xyz". Default: WGS84 (EPSG:4326). Indicates the coordinate reference system to use in MATSim internally, e.g. EPSG:1234.</li>
- * <li>--network            Format: <i>path</i> to the network file. Default: cwd under "./network.xml"</li>
+ * <li>--network            Format: {@code path-to/file} to the network file. Default: cwd under "./network.xml"</li>
  * <li>--network_crs        Format: "epsg:xyz". Default: unchanged. Coordinate reference system of the network file, converted to --crs in simulation if different</li>
  * <li>--network_clean      Options: [yes, no]. Default: no. When yes, apply a network clean operation on memory model of network before simulating, persists result under original network input location when possible. Can be used to remove unreachable links if needed</li> 
- * <li>--plans              Format: <i>path</i> to the activities file. Default: the cwd under "./plans.xml"</li>
+ * <li>--plans              Format: {@code path-to/file}. Default: "./plans.xml"</li>
  * <li>--plans_crs          Format: "epsg:xyz. Default: unchanged. Coordinate reference system of the plans file, converted to --crs in simulation if different</li>
  * <li>--plans_sample       Format: between 0 and 1. Default: 1. Sample of the population plans applied in simulation. When in config mode, downsampled plan is persisted as well</li>
- * <li>--activity_config    Format: <i>path</i> to activity config file. Defining activity types portion in MATSim config file format (plancalcscore section only) compatible with the plans file</li>
+ * <li>--activity_config    Format: {@code path-to/file} to activity config file. Defining activity types portion in MATSim config file format (plancalcscore section only) compatible with the plans file</li>
  * <li>--starttime          Format: "hh:mm:ss". Default:00:00:00. Start time of the simulation in, ignore activities in the plans file before this time.</li>
  * <li>--endtime            Format: "hh:mm:ss". Default:00:00:00. End time of the simulation in "hh:mm:ss" format, ignore activities in the plans file after this time.</li>
  * <li>--flowcap_factor     Format: between 0 and 1. Default 1. Scale link flow capacity. Use icw down sampling of population plans to remain consistent</li>
  * <li>--storagecap_factor  Format: between 0 and 1. Default 1. Scale link storage capacity. Use icw down sampling of population plans to remain consistent</li>
  * <li>--link_stats         Format: <i>int1,int2</i>". Default: from config file. Set linkStats configuration, <i>int1</i> is the iteration interval to average over, <i>int2</i> is iteration persistence interval, int1 is smaller or equal than int2, when int2 is 0, no persistence </li>
  * <li>--iterations_max     Format: positive number. Default: none. Maximum number of iterations the simulation will run before terminating. Mandatory</li>
- * <li>--output             Format: <i>directory</i>.  Default: "./output". Location to store the generated simulation results or configuration file(s).</li>
+ * <li>--output             Format: {@code path}.  Default: ".". Location to store the generated simulation results or configuration file(s).</li>
  * </ul> 
+ * 
+ * Format {@code <path>}. Default: "." the directory this application was invoked from
  * 
  * The {@code --modes} option defines what modes are simulated (car only, or car and pt) and how they are simulated. Currently only cars can be simulated, i.e., 
  * we only support {@code --modes car_sim}. The public transport support (both teleported and simulated is to be added at a later stage). If absent it defaults to
@@ -78,7 +80,7 @@ import org.goplanit.utils.exceptions.PlanItException;
  * 
  * The {@code --pt-stops-csv} does two things. First it attempts to parse the provided file. Second it implicitly assumes the user would like to use the stop information to construct the pt teleportation travel times rather than
  * the default as-the-crow-flies origin-destination travel times for pt that would otherwise be used in absence of any stop information. Since using a stop-to-stop travel time matrix is generally always an improvement it overrides the default behaviour and activated the MATSim
- * PtMatrixBasedRouter, see also {@link https://github.com/matsim-org/matsim-libs/tree/master/contribs/matrixbasedptrouter/src/main/java/org/matsim/contrib/matrixbasedptrouter}
+ * PtMatrixBasedRouter, see also https://github.com/matsim-org/matsim-libs/tree/master/contribs/matrixbasedptrouter/src/main/java/org/matsim/contrib/matrixbasedptrouter
  * <p>
  * In case the user decides not to use these shortcuts but instead prefers its own configuration file(s) that is also possible, in which case the following two commands should be used:
  *  <ul>
@@ -273,7 +275,7 @@ public class PlanitAurinMatsimMain {
     } catch (Exception e) {
       if(LOGGER !=null) {
         LOGGER.severe(e.getMessage());
-        LOGGER.severe("Unable to execute MATSim simulation from PLANit AURIN wrapper, terminating");
+        LOGGER.severe("Something went wrong while executing PLANit AURIN MATSim wrapper, terminating");
       }else {
         e.printStackTrace();
       }

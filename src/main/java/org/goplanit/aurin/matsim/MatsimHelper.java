@@ -56,7 +56,7 @@ public class MatsimHelper {
   public static final String OUTPUT_KEY = "output";
   
   /** Output path defaults to directory where this application was run from */
-  public static final Path DEFAULT_OUTPUT_PATH = Path.of(CURRENT_PATH.toString(),"output");  
+  public static final Path DEFAULT_OUTPUT_PATH = CURRENT_PATH;  
   
   //----------------------------------------------------
   //-------- TYPE --------------------------------------
@@ -754,7 +754,7 @@ public class MatsimHelper {
     PlanItException.throwIfNull(keyValueMap, "Configuration information null");
     
     Path outputDir = null;
-    if(keyValueMap.containsKey(OUTPUT_KEY)) {
+    if(keyValueMap.containsKey(OUTPUT_KEY) && StringUtils.isNullOrBlank(keyValueMap.get(OUTPUT_KEY))) {
       outputDir = Paths.get(keyValueMap.get(OUTPUT_KEY));  
     }else {
       outputDir = DEFAULT_OUTPUT_PATH; 
@@ -894,6 +894,7 @@ public class MatsimHelper {
 
   /** Conduct a clean on MATSim network and persist result in location of where the MATSim network was sourced from (append "_cleaned" to origin name in the process)
    * 
+   * @param keyValueMap the user configuration
    * @param matsimNetwork MATSim network to clean
    */
   public static void cleanAndPersistMatsimNetwork(Map<String, String> keyValueMap, org.matsim.api.core.v01.network.Network matsimNetwork) {
