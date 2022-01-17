@@ -49,7 +49,7 @@ We distinguish between three key types of functionality that are exposed, namely
  
 When choosing *default_config*, all other command line settings are ignored except for the --output option on where to store the result configuration file, it generates the full default based MATSim configuration file.
 
-When choosing *config*, the configurable command line options set by the user are included in the generated config file as well as the defaults that otherwise would be applied by this wrapper's simulation runs (currently car only). If no known settings is available, it generates the same setting as *default_config* would. In other words when using *default_config* it provides the user with a template with all default options explicitly listed, whereas config provides a more tailored configuration file used by this wrapper including modifications made by command line options provided.
+When choosing *config*, the configurable command line options set by the user are included in the generated config file as well as the defaults that otherwise would be applied by this wrapper's simulation runs. If no settings are specified, it generates the same setting as *default_config* would. In other words when using *default_config* it provides the user with a template with all default options explicitly listed, whereas *config* provides a more tailored configuration file based on the command line modifications provided.
 
 When choosing --type *simulation*, one can either decide to adopt a pre-generated MATSim config file to configure the simulation, or, alternatively use the exposed command line configuration options directly. In case a config file is used, only the following command line options are important:
 

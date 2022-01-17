@@ -85,8 +85,8 @@ public class MatsimHelper {
   public static final String MODES_KEY = "modes";
   
   /** Value reflecting the car mode as only mode, which is to be simulated */
-  public static final String MODES_CAR_SIM_VALUE = "car_sim";
-  
+  public static final String MODES_CAR_SIM_VALUE = "car_sim";  
+      
   /** Value reflecting the car and pt modes as modes, where cars are simulated and PT is teleported 
    * TODO: NOT YET SUPPORTED */
   public static final String MODES_CAR_SIM_PT_TELEPORT_VALUE = "car_sim_pt_teleport";  
@@ -94,6 +94,9 @@ public class MatsimHelper {
   /** Value reflecting the car and pt modes as modes, which are to be simulated 
    * TODO: NOT YET SUPPORTED */
   public static final String MODES_CAR_PT_SIM_VALUE = "car_pt_sim";
+  
+  /** Default value for modes key to use in simulation */
+  public static final String MODES_DEFAULT_VALUE = MODES_CAR_SIM_VALUE;  
   
   //----------------------------------------------------
   //-------- CRS -------------------------------------
@@ -253,20 +256,20 @@ public class MatsimHelper {
    * @param config to alter
    * @param keyValueMap to extract configuration choice from
    */
-  private static void configureModes(final Config config, final Map<String, String> keyValueMap) {
-    String modesValue = keyValueMap.get(MODES_KEY);
-    switch (modesValue) {
-      case MODES_CAR_SIM_PT_TELEPORT_VALUE:
+  private static void configureModes(final Config config, final Map<String, String> keyValueMap) {   
+    var modesType = parseModesType(keyValueMap);          
+    switch (modesType) {    
+      case CAR_PT_TELEPORT:
         LOGGER.info("[SETTING] teleportation mode: pt");
-      case MODES_CAR_SIM_VALUE:
+      case CAR_ONLY:
         config.changeMode().setModes(new String[] {MATSIM_CAR_MODE});
         LOGGER.info("[SETTING] simulation mode: car");
         break;
-      case MODES_CAR_PT_SIM_VALUE:
-        LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", modesValue));
+      case CAR_PT:
+        LOGGER.warning(String.format("value %s for --modes not yet supported, ignored", keyValueMap.get(MODES_KEY)));
         break;                
       default:
-        LOGGER.warning(String.format("Unknown value %s for --modes argument, ignored", modesValue));
+        LOGGER.severe(String.format("Unknown value %s for --modes argument, ignored", keyValueMap.get(MODES_KEY)));
     }        
   }
 
@@ -307,7 +310,7 @@ public class MatsimHelper {
     }   
   }
 
-  /** Configure the CRS of the network. If not set we use the geo data as is without any conversion. Otherwise it is converted to the MATSim 
+  /** Configure the CRS of the network. If not set we do nothing to change the input CRS for MATSim. Otherwise it is converted to the MATSim 
    * simulation global CRS.
    * 
    * @param config to configure
@@ -316,7 +319,9 @@ public class MatsimHelper {
   private static void configureNetworkCrs(Config config, Map<String, String> keyValueMap) {
     String crsValue = keyValueMap.get(NETWORK_CRS_KEY);
     if(StringUtils.isNullOrBlank(crsValue)) {
-      crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
+      //crsValue = MATSIM_DEFAULT_GLOBAL_CRS; 17/1 do nothing instead because user did not specify anything to be done
+      LOGGER.info("[SETTING] MATSim network input CRS NOT explicitly set");
+      return;
     }
     
     LOGGER.info(String.format("[SETTING] MATSim network input CRS: %s", crsValue));
@@ -329,8 +334,7 @@ public class MatsimHelper {
    * @param config to configure
    * @param keyValueMap to extract location from
    */
-  private static void configurePlans(final Config config, final Map<String, String> keyValueMap) {
-    String planFileLocation = keyValueMap.get(PLANS_KEY);     
+  private static void configurePlans(final Config config, final Map<String, String> keyValueMap) {      
     try {      
       
       Path planFileLocationAsPath = extractPlansFileLocation(keyValueMap);
@@ -340,7 +344,7 @@ public class MatsimHelper {
       config.plans().setInputFile(planFileLocationAsPath.toString());
       
     }catch (Exception e) {
-      LOGGER.warning(String.format("Invalid plans file location %s for --plans, ignored", planFileLocation));
+      LOGGER.warning(String.format("Invalid plans file location %s for --plans, ignored", keyValueMap.get(PLANS_KEY)));
     } 
   }
 
@@ -353,7 +357,9 @@ public class MatsimHelper {
   private static void configurePlansCrs(Config config, Map<String, String> keyValueMap) {
     String crsValue = keyValueMap.get(PLANS_CRS_KEY);
     if(StringUtils.isNullOrBlank(crsValue)) {
-      crsValue = MATSIM_DEFAULT_GLOBAL_CRS;
+      //crsValue = MATSIM_DEFAULT_GLOBAL_CRS; 17/1 do nothing instead because user did not specify anything to be done
+      LOGGER.info("[SETTING] MATSim plans input CRS NOT explicitly set");
+      return;      
     }
     
     LOGGER.info(String.format("[SETTING] MATSim plans CRS: %s", crsValue));
@@ -491,7 +497,7 @@ public class MatsimHelper {
    * the plans.xml. The configuration of the activities in this config file is merged with the provided config.
    * 
    * Note: Currently there is no fail safe for if users provide additional configuration in this file. This is now
-   * simply merged with the config as well. IDeally we refactor this so that ONLY the activity component is merged. However
+   * simply merged with the config as well. Ideally we would refactor this so that ONLY the activity component is merged. However
    * the MATSim code is quite messy and not documented very well on how to do this elegantly.
    * 
    * @param config to merge with activity configuration
@@ -500,7 +506,7 @@ public class MatsimHelper {
   private static void configureActivityConfig(final Config config, final Map<String, String> keyValueMap) {
     String activityConfigValue = keyValueMap.get(ACTIVITY_CONFIG_KEY);
     if(StringUtils.isNullOrBlank(activityConfigValue )) {
-      LOGGER.warning(String.format("Missing activity configuration file (--%s)",ACTIVITY_CONFIG_KEY));
+      LOGGER.warning("[SETTING] Activity configuration file not set");
       return;
     }
     if(!Paths.get(activityConfigValue).toFile().exists()) {
@@ -769,10 +775,10 @@ public class MatsimHelper {
   /** Determine what modesType we are working with (car, car and pt (teleport), car and pt))
    * 
    * @param keyValueMap to extract information from
-   * @return type found
+   * @return type found, default CAR_ONLY when absent
    */
   public static ModesType parseModesType(final Map<String, String> keyValueMap) {
-    if(!keyValueMap.containsKey(MODES_KEY)) {
+    if(StringUtils.isNullOrBlank(keyValueMap.get(MODES_KEY))) {
         return ModesType.CAR_ONLY;
     }
     
