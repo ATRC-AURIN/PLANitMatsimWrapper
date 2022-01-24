@@ -52,10 +52,14 @@ public class MatsimWrapperCarOnlyTest {
       int linkStatsAverageInterval = 1;
       int linkStatsWriteInterval = 1;
         
-      // java -jar PLANitAurinMatsim_version_.jar --type simulation --modes car_sim --crs epsg:3112 
-      //      --network "..\src\test\resources\Melbourne\car_simple_melbourne_network.xml" --network_crs epsg:3112
-      //      --plans "..\src\test\resources\Melbourne\plans_victoria_car.xml" --plans_crs epsg:3112 --activity_config
-      //      "..\src\test\resources\Melbourne\activity_config.xml" --link_stats 1,1 --iterations_max 2
+      /** JAVA COMMAND LINE VERSION **
+       java -jar PLANitAurinMatsim_version_.jar --type simulation --modes car_sim --crs epsg:3112 \ 
+            --network "..\src\test\resources\Melbourne\car_simple_melbourne_network.xml" --network_crs epsg:3112 \
+            --plans "..\src\test\resources\Melbourne\plans_victoria_car.xml" --plans_crs epsg:3112 --activity_config \
+            "..\src\test\resources\Melbourne\activity_config.xml" --link_stats 1,1 --iterations_max 2 \ 
+            --network_clean yes 
+      ** JAVA COMMAND LINE VERSION **/               
+      
       PlanitAurinMatsimMain.main(
           new String[]{
               "--type",
@@ -79,7 +83,9 @@ public class MatsimWrapperCarOnlyTest {
               "--storagecap_factor",
               String.valueOf(downSampleFactor),
               "--link_stats",
-              String.valueOf(linkStatsAverageInterval)+"," + String.valueOf(linkStatsWriteInterval),              
+              String.valueOf(linkStatsAverageInterval)+"," + String.valueOf(linkStatsWriteInterval),
+              "--network_clean",
+              "yes",
               "--iterations_max",
               String.valueOf(iterationsMax)});     
       

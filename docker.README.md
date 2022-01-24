@@ -28,6 +28,13 @@ In addition one more variable is present:
 
 * *VERSION*, with default to the latest released version of this repository, so normally there is no need to use this variable
  
+# Copied resources
+
+The docker image for docker/simulation also  by default copies in the Melbourne test resources used in the unit tests. The files are mounted in 
+
+`/app/test/resources/Melbourne` 
+
+these resources can be used to run some simple tests on the created docker image without the need to specify any volumes or mounts. 
 
 # Cheatsheet of Docker commands to use this repo:
 
@@ -61,15 +68,24 @@ To inspect the file structure of an image (not container), export it to a tar fi
 docker image save matsim-<type>-wrapper:latest > ./image.tar
 ```
 
-**running the created image **
+**running the default-config created image **
 
 Below an example of running the image with none/some of the command line options set.
 
-To create the used default config template used by the wrapper in XML form for manual adjustements (with default output)
+To create the used default config template used by the wrapper in XML form for manual adjustments (with default output)
 
 ```
 docker run matsim-defaultconfig-wrapper:latest
 ```
+
+** running the matsim-simulation created image **
+
+Below an example of how to run a MATSim simulation in Docker, analogous to the car based Melbourne oriented unit test. Note that here we use the directly copied resources to `/app/test/resources` that are by default available in the image. For tru external files one needs to use volumes instead.
+
+```
+docker run -e MODES=car_sim -e CRS=epsg:3112 -e NETWORK="/app/test/resources/Melbourne/car_simple_melbourne_network.xml" -e NETWORK_CRS=epsg:3112 -e PLANS="/app/test/resources/Melbourne/plans_victoria_car.xml" -e PLANS_CRS=epsg:3112 -e ACTIVITY_CONFIG="/app/test/resources/Melbourne/activity_config.xml" -e LINK_STATS=1,1 -e ITERATIONS_MAX=2 matsim-simulation-wrapper:latest
+```
+
 
 # Resources
 

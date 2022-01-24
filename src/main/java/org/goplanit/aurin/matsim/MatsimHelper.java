@@ -18,6 +18,7 @@ import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.population.PopulationUtils;
 import org.matsim.core.utils.misc.Time;
+
 import org.goplanit.utils.exceptions.PlanItException;
 import org.goplanit.utils.math.Precision;
 import org.goplanit.utils.misc.StringUtils;
@@ -148,8 +149,11 @@ public class MatsimHelper {
   public static final String PLANS_CRS_KEY = "plans_crs";
   
   /** Key reflecting the plan sample population percentage to use */
-  public static final String PLANS_SAMPLE_KEY = "plans_sample";         
+  public static final String PLANS_SAMPLE_KEY = "plans_sample";
   
+  /** Key reflecting the default plan sample population percentage to use (1=100%)*/
+  public static final String PLANS_SAMPLE_DEFAULT = "1";  
+    
   //----------------------------------------------------
   //-------- STARTTIME/ENDTIME -------------------------
   //----------------------------------------------------  
@@ -215,7 +219,7 @@ public class MatsimHelper {
   //----------------------------------------------------
 
   /** Key reflecting the location of the CSV file containing the supported pt stops for the network*/
-  public static final String PT_STOPS_CSV_KEY = "pt-stops-csv";
+  public static final String PT_STOPS_CSV_KEY = "pt_stops_csv";
   
   /** Estimate of car teleported speed. Used to for example derive pt teleported speed (multiplied by factor) when
    * including pt as teleported mode */
@@ -407,10 +411,10 @@ public class MatsimHelper {
     double factor = 1;
     try {
       String storageCapacityFactor = keyValueMap.get(CAPACITY_STORAGE_FACTOR_KEY);
-      if(storageCapacityFactor != null) {
+      if(!StringUtils.isNullOrBlank(storageCapacityFactor)) {
         factor = Double.parseDouble(storageCapacityFactor);
-        config.qsim().setStorageCapFactor(factor);
       }
+      config.qsim().setStorageCapFactor(factor);
     }catch(Exception e) {
       LOGGER.warning("IGNORED: Simulation storage capacity factor is not a valid floating point value");
     }        
@@ -426,10 +430,10 @@ public class MatsimHelper {
     double factor = 1;
     try {
       String flowCapacityFactor = keyValueMap.get(CAPACITY_FLOW_FACTOR_KEY);
-      if(flowCapacityFactor != null) {
+      if(!StringUtils.isNullOrBlank(flowCapacityFactor)) {
         factor = Double.parseDouble(flowCapacityFactor);
-        config.qsim().setFlowCapFactor(factor);
       }
+      config.qsim().setFlowCapFactor(factor);
     }catch(Exception e) {
       LOGGER.warning("IGNORED: Simulation flow capacity factor is not a valid floating point value");
     }  
@@ -451,7 +455,7 @@ public class MatsimHelper {
     int writeInterval = config.linkStats().getWriteLinkStatsInterval();
     TRY : try {
       String linkStats = keyValueMap.get(LINK_STATS_KEY);
-      if(linkStats != null) {
+      if(!StringUtils.isNullOrBlank(linkStats)) {
         String[] linkStatsArray = linkStats.split(","); 
         if(linkStatsArray.length!=2) {
           LOGGER.warning(String.format("IGNORED: %s value is not a comma seaprated string of length 2, adopting defaults", LINK_STATS_KEY));
@@ -529,7 +533,7 @@ public class MatsimHelper {
   private static void configurePtMatrixRouter(final Config config, final Map<String, String> keyValueMap) {
     String ptStopsCsvValue = keyValueMap.get(PT_STOPS_CSV_KEY);
     if(StringUtils.isNullOrBlank(ptStopsCsvValue )) {
-      LOGGER.info(String.format("No pt stops CSV provided, MATSim matrix based router not activated"));
+      LOGGER.info(String.format("No pt stops CSV provided, MATSim matrix based pt router not activated"));
       return;
     }
         
@@ -673,7 +677,7 @@ public class MatsimHelper {
    */
   public static boolean isNetworkCleanActivated(final Map<String, String> keyValueMap) {
     String cleanFlag = keyValueMap.get(NETWORK_CLEAN_KEY);
-    if(cleanFlag==null) {
+    if(StringUtils.isNullOrBlank(cleanFlag)) {
       cleanFlag = DEFAULT_NETWORK_CLEAN;
     }
     
@@ -701,13 +705,18 @@ public class MatsimHelper {
     if(!keyValueMap.containsKey(PLANS_SAMPLE_KEY)) {
       return false;
     }
+
+    String downSampleValueString = keyValueMap.get(PLANS_SAMPLE_KEY);
+    if(StringUtils.isNullOrBlank(downSampleValueString)){
+      downSampleValueString = PLANS_SAMPLE_DEFAULT;
+    }
     
     try {
-      double downSamplingFactor = Double.parseDouble(keyValueMap.get(PLANS_SAMPLE_KEY));
-      if(downSamplingFactor>1) {
+      double downSamplingFactor = Double.parseDouble(downSampleValueString);
+      if(Precision.isGreater(downSamplingFactor,1)) {
         LOGGER.warning("IGNORED: Plans down sampling percentage is larger than 1, should be between 0 and 1");  
       }
-      return (downSamplingFactor + Precision.EPSILON_3) < 1;
+      return Precision.isSmaller(downSamplingFactor,1,Precision.EPSILON_3);
     }catch(Exception e) {
       LOGGER.warning("IGNORED: Plans down sampling percentage is not a valid floating point value");
       return false;

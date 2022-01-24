@@ -14,13 +14,13 @@ ENV VERSION 0.0.1a1
 ENV OUTPUT ""
 #---------------------------------------------------
 
-RUN mkdir /opt/jar
+RUN mkdir -p /app/jar
 
 # copy application JAR (with libraries inside) assuming image is built from root of repo
-COPY ./target/planit-aurin-matsim-${VERSION}.jar /opt/jar
+COPY ./target/planit-aurin-matsim-${VERSION}.jar /app/jar
 
 # run the executable jar with --type default_config
-CMD ["sh", "-c", "java -jar /opt/jar/planit-aurin-matsim-${VERSION}.jar \
+CMD ["sh", "-c", "java -jar /app/jar/planit-aurin-matsim-${VERSION}.jar \
   --type default_config \
   --output ${OUTPUT}\
   "]

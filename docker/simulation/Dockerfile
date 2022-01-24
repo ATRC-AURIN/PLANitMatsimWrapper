@@ -11,25 +11,23 @@ ENV VERSION 0.0.1a1
 
 # user specific environmental variables to override:
 #---------------------------------------------------
-ENV OUTPUT ""
 ENV MODES ""
 ENV CRS ""
 ENV NETWORK ""
 ENV NETWORK_CRS ""
-
-# cleaning the network is not supported here because it has no impact on the configuration file
-
+ENV NETWORK_CLEAN ""
 ENV PLANS ""
 ENV PLANS_CRS ""
-
-# down sampling of a plans file is not supported here because it has no impact on the configuration file
-
+ENV PLANS_SAMPLE ""
 ENV ACTIVITY_CONFIG ""
 ENV STARTTIME ""
 ENV ENDTIME ""
 ENV FLOWCAP_FACTOR ""
 ENV STORAGECAP_FACTOR ""
+ENV LINK_STATS ""
 ENV ITERATIONS_MAX ""
+ENV PT_STOPS_CSV ""
+ENV OUTPUT ""
 #---------------------------------------------------
 
 RUN mkdir -p /app/jar
@@ -37,22 +35,30 @@ RUN mkdir -p /app/jar
 # copy application JAR (with libraries inside) assuming image is built from root of repo
 COPY ./target/planit-aurin-matsim-${VERSION}.jar /app/jar
 
+# copy test resources 
+RUN mkdir -p /app/test/resources/Melbourne
+COPY ./src/test/resources/Melbourne/* /app/test/resources/Melbourne
+
 # run the executable jar with --type config
 CMD ["sh", "-c", "java -jar /app/jar/planit-aurin-matsim-${VERSION}.jar \
-  --type config \
-  --output ${OUTPUT} \
+  --type simulation \
   --modes ${MODES} \
   --crs ${CRS} \
   --network ${NETWORK} \
   --network_crs ${NETWORK_CRS} \
+  --network_clean ${NETWORK_CLEAN} \
   --plans ${PLANS}\
   --plans_crs ${PLANS_CRS}\
+  --plans_sample ${PLANS_SAMPLE}\
   --activity_config ${ACTIVITY_CONFIG}\
   --starttime ${STARTTIME}\
   --endtime ${ENDTIME}\
   --flowcap_factor ${FLOWCAP_FACTOR}\
   --storagecap_factor ${STORAGECAP_FACTOR}\
+  --link_stats ${LINK_STATS} \
   --iterations_max ${ITERATIONS_MAX}\
+  --pt_stops_csv ${PT_STOPS_CSV} \
+  --output ${OUTPUT} \
   "]
 
        
