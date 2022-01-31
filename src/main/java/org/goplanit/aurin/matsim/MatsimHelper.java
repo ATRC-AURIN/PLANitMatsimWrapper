@@ -769,7 +769,7 @@ public class MatsimHelper {
     PlanItException.throwIfNull(keyValueMap, "Configuration information null");
     
     Path outputDir = null;
-    if(keyValueMap.containsKey(OUTPUT_KEY) && StringUtils.isNullOrBlank(keyValueMap.get(OUTPUT_KEY))) {
+    if(keyValueMap.containsKey(OUTPUT_KEY) && !StringUtils.isNullOrBlank(keyValueMap.get(OUTPUT_KEY))) {
       outputDir = Paths.get(keyValueMap.get(OUTPUT_KEY));  
     }else {
       outputDir = DEFAULT_OUTPUT_PATH; 

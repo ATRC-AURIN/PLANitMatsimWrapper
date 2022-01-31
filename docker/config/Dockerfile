@@ -33,6 +33,8 @@ ENV ITERATIONS_MAX ""
 #---------------------------------------------------
 
 RUN mkdir -p /app/jar
+RUN mkdir  /input
+RUN mkdir  /output
 
 # copy application JAR (with libraries inside) assuming image is built from root of repo
 COPY ./target/planit-aurin-matsim-${VERSION}.jar /app/jar

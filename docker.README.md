@@ -36,9 +36,7 @@ The docker image for docker/simulation also  by default copies in the Melbourne 
 
 these resources can be used to run some simple tests on the created docker image without the need to specify any volumes or mounts. 
 
-# Cheatsheet of Docker commands to use this repo:
-
-**build the docker image**
+# Build a docker image
 
 From chosen app type we must invoke the right docker file. While normally we would run this from within the directory where the docker file is located, we cannot do this here because we require access to the built jar file. this jar file is located in a parent directory relative to the where the docker files live. In Docker it is NOT allowed to copy files outside of the context, i.e., upstream of the docker file root dir. To avoid this problem, we instead invoke the build from the root of the repo (which does have access downstream to the jar file via /target/*) and then specify the dockerfile explicitly as being the one required to generate the image for the type we are interested in via the *-f* switch
 
@@ -60,7 +58,7 @@ and the **--type simulation** image via
 docker build -t matsim-simulation-wrapper:latest -f ./docker/simulation/Dockerfile . 
 ```
 
-**inspect file structure of built image**
+# Inspect file structure of built image
 
 To inspect the file structure of an image (not container), export it to a tar file and then inspect the tar. An image cannot be inspected without running it otherwise.
 
@@ -68,23 +66,52 @@ To inspect the file structure of an image (not container), export it to a tar fi
 docker image save matsim-<type>-wrapper:latest > ./image.tar
 ```
 
-**running the default-config created image **
+# Running image without volumes
 
-Below an example of running the image with none/some of the command line options set.
+## Default-config
 
-To create the used default config template used by the wrapper in XML form for manual adjustments (with default output)
+Below an example of running the image with no command line options set.
+
+To create the used default config template used by the wrapper in XML form for manual adjustments (with default output). This creates the default configuration file, but since this is a container, the created file is lost when the container is removed.
 
 ```
+docker rm  matsim-defaultconfig-wrapper
 docker run matsim-defaultconfig-wrapper:latest
 ```
 
-** running the matsim-simulation created image **
+> See volues examples on how to extract created files from a run
 
-Below an example of how to run a MATSim simulation in Docker, analogous to the car based Melbourne oriented unit test. Note that here we use the directly copied resources to `/app/test/resources` that are by default available in the image. For tru external files one needs to use volumes instead.
+## Matsim-simulation
+
+Below an example of how to run a MATSim simulation in Docker, analogous to the car based Melbourne oriented unit test. Note that here we use the directly copied resources to `/app/test/resources` that are by default available in the image. For true external files one needs to use volumes instead. Also results are lost when the container dies in this example.
 
 ```
 docker run -e MODES=car_sim -e CRS=epsg:3112 -e NETWORK="/app/test/resources/Melbourne/car_simple_melbourne_network.xml" -e NETWORK_CRS=epsg:3112 -e PLANS="/app/test/resources/Melbourne/plans_victoria_car.xml" -e PLANS_CRS=epsg:3112 -e ACTIVITY_CONFIG="/app/test/resources/Melbourne/activity_config.xml" -e LINK_STATS=1,1 -e ITERATIONS_MAX=2 matsim-simulation-wrapper:latest
 ```
+
+> See volumes examples on how to extract created files from a run
+
+# Running image with volumes
+
+When using volumes we conform to the following convention and assumptions:
+
+* Your environment has two fixed persistent directories: VM_INPUT and VM_OUTPUT where  the container reads and outputs data. Often Docker would be run from a virtual machine (VM) hence this naming convention. 
+* It is expected that these two directories are available in the working directory from which the run command is invoked. If not this script needs to be altered to reflect these changes
+* Before Docker Container runs, the input files should be present in the VM_INPUT directory.
+* The docker container runs and creates the output files in VM_OUTPUT directory
+
+Below example scripts of how to run while using volumes
+
+## Default-config
+
+```
+docker rm  matsim-defaultconfig-wrapper
+docker run --name matsim-defaultconfig-wrapper  -e OUTPUT=/output -v ${PWD}/VM_OUTPUT:/output/:rw  matsim-defaultconfig-wrapper:latest
+``` 
+
+## Matsim-simulation created image
+
+
 
 
 # Resources
