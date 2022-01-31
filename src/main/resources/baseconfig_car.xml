@@ -6,8 +6,8 @@
 		<param name="createGraphs" value="false" />
 		<param name="dumpDataAtEnd" value="false" />
 		<param name="mobsim" value="qsim" />
-		<param name="outputDirectory" value="./output" />
-		<param name="overwriteFiles" value="deleteDirectoryIfExists" />
+		    <!-- do not delete directory because if output dir is overwritten where one does not have permission to remove it MATSim will crash -->
+		<param name="overwriteFiles" value="overwriteExistingFiles" />
 		<param name="writeEventsInterval" value="10" />
 		<param name="writePlansInterval" value="10" />
 		<param name="writeSnapshotsInterval" value="1" />

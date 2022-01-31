@@ -75,7 +75,7 @@ When configuring the simulation via command line options directly, not using a c
  * **--storagecap_factor**    *Format: between 0 and 1.* Default 1. Scale link storage capacity. Use icw down sampling of population plans to remain consistent
  * **--iterations_max**    *Format: positive number.* Default: none. Maximum number of iterations the simulation will run before terminating. Mandatory
  * **--link_stats** *Format: average interval integer, interval integer.* Default: 5,10. Defines over how many iterations to average the link statistics (first) and the interval to which these statistics are to be persisted (second). Second value must be larger or equal than the first.
- * **--output** *Format: <path to desired output directory>.*  Default: *"./output"*. Location to store the generated simulation results or configuration file(s)
+ * **--output** *Format: <path to desired output directory>.*  Default: "<cwd>/output". Location to store the generated simulation results or configuration file(s)
 
 The *--modes* option defines what modes are simulated (car only, or car and pt) and how they are simulated. Currently only cars can be simulated, i.e., we only support *--modes car_sim* for now. The public transport support (both teleported and simulated is to be added at a later stage). If absent it defaults to *--modes car_sim.*
 

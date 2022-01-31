@@ -86,7 +86,8 @@ docker run matsim-defaultconfig-wrapper:latest
 Below an example of how to run a MATSim simulation in Docker, analogous to the car based Melbourne oriented unit test. Note that here we use the directly copied resources to `/app/test/resources` that are by default available in the image. For true external files one needs to use volumes instead. Also results are lost when the container dies in this example.
 
 ```
-docker run -e MODES=car_sim -e CRS=epsg:3112 -e NETWORK="/app/test/resources/Melbourne/car_simple_melbourne_network.xml" -e NETWORK_CRS=epsg:3112 -e PLANS="/app/test/resources/Melbourne/plans_victoria_car.xml" -e PLANS_CRS=epsg:3112 -e ACTIVITY_CONFIG="/app/test/resources/Melbourne/activity_config.xml" -e LINK_STATS=1,1 -e ITERATIONS_MAX=2 matsim-simulation-wrapper:latest
+docker rm matsim-simulation-wrapper
+docker run --name matsim-simulation-wrapper -e MODES=car_sim -e CRS=epsg:3112 -e NETWORK="/app/test/resources/Melbourne/car_simple_melbourne_network_cleaned.xml" -e NETWORK_CRS=epsg:3112 -e PLANS="/app/test/resources/Melbourne/plans_victoria_car.xml" -e PLANS_CRS=epsg:3112 -e ACTIVITY_CONFIG="/app/test/resources/Melbourne/activity_config.xml" -e LINK_STATS=1,1 -e ITERATIONS_MAX=2 matsim-simulation-wrapper:latest
 ```
 
 > See volumes examples on how to extract created files from a run
@@ -104,15 +105,23 @@ Below example scripts of how to run while using volumes
 
 ## Default-config
 
+Example where result is written to `/output` which in turn is mapped by the volume
+
 ```
 docker rm  matsim-defaultconfig-wrapper
 docker run --name matsim-defaultconfig-wrapper  -e OUTPUT=/output -v ${PWD}/VM_OUTPUT:/output/:rw  matsim-defaultconfig-wrapper:latest
-``` 
+```
 
 ## Matsim-simulation created image
 
+Example where result is written to `/output` which in turn is mapped by the volume. Input is passed on via volume `/input` as well. Here the assumption is that all input files of the Melbourne test resources have been copied prior to running the image to the `./VM_INPUT/` dir.
 
+```
+docker rm matsim-simulation-wrapper
+docker run --name matsim-simulation-wrapper -e MODES=car_sim -e CRS=epsg:3112 -e NETWORK="/input/car_simple_melbourne_network_cleaned.xml" -e NETWORK_CRS=epsg:3112 -e PLANS="/input/plans_victoria_car.xml" -e PLANS_CRS=epsg:3112 -e ACTIVITY_CONFIG="/input/activity_config.xml" -e LINK_STATS=1,1 -e ITERATIONS_MAX=2 -e OUTPUT=/output -v ${PWD}/VM_INPUT:/input/:rw  -v ${PWD}/VM_OUTPUT:/output/:rw --rm matsim-simulation-wrapper:latest
+```
 
+> It is important to note that in case the inputs are to be chosen by an end-user via some interface that hides the actual Docker calls, the process that converts these inputs to the below should ensure that these files are copied to the right locations and that the environment variables passed in to the run command that refer to files, e.g. INPUT=, OUTPUT=, etc., are constructed on the fly by combining the volume directories and file names where needed.
 
 # Resources
 
