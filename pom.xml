@@ -86,7 +86,7 @@
 		<repository>
 			<id>planit-repository.goplanit.org</id>
 			<name>PLANit Repository</name>
-			<url>http://repository.goplanit.org</url>
+			<url>https://repository.goplanit.org</url>
 		</repository>
 
 	</repositories>
