@@ -3,7 +3,23 @@
 #--------------------------#
 # see ../../docker.README.md for details
 
-# Base Alpine Linux based image with OpenJDK 11 only
+# -----------------------------------------------------
+# -----------------------------------------------------
+# STAGE 1 - BUILD
+# Maven build
+FROM maven:3.8.4-jdk-11 as build
+
+RUN mkdir -p /app/src
+COPY ./src /app/src
+COPY pom.xml /app
+WORKDIR /app
+RUN mvn clean install -Dmaven.test.skip=true
+
+
+# -----------------------------------------------------
+# -----------------------------------------------------
+# STAGE 2 - BUILD
+# EXECUTABLE JAR + Java environment
 FROM adoptopenjdk/openjdk11:jre-11.0.6_10-alpine
 
 # PLANit version
@@ -34,8 +50,8 @@ RUN mkdir -p /app/jar
 RUN mkdir  /input
 RUN mkdir  /output
 
-# copy application JAR (with libraries inside) assuming image is built from root of repo
-COPY ./target/planit-aurin-matsim-${VERSION}.jar /app/jar
+# copy built jar from previous stage - intermediate results are discarded in image
+COPY --from=build /app/target/planit-aurin-matsim-*.jar /app/jar 
 
 # copy test resources 
 RUN mkdir -p /app/test/resources/Melbourne
