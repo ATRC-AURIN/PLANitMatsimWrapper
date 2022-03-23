@@ -1,0 +1,33 @@
+inputs:
+  MODES:
+    type: value
+    value: car_sim
+  CRS:
+    type: value
+    value: epsg:3112
+  NETWORK:
+    type: path
+    path: /data/inputs/car_simple_melbourne_network_cleaned.xml
+  NETWORK_CRS:
+    type: value
+    value: epsg:3112
+  PLANS:
+    type: path
+    path: /data/inputs/plans_victoria_car.xml
+  PLANS_CRS:
+    type: value
+    value: epsg:3112
+  ACTIVITY_CONFIG:
+    type: path
+    path: /data/inputs/activity_config.xml
+  LINK_STATS:
+    type: value
+    value: 1,1
+  ITERATIONS_MAX:
+    type: value
+    value: 2  
+  OUTPUT:
+    type: path
+    path: /data/outputs                    
+outputs:
+  
