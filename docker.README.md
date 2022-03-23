@@ -63,7 +63,7 @@ docker build -t matsim-simulation-wrapper:latest -f ./docker/simulation/Dockerfi
 To inspect the file structure of an image (not container), export it to a tar file and then inspect the tar. An image cannot be inspected without running it otherwise.
 
 ```
-docker image save matsim-<type>-wrapper:latest > ./image.tar
+docker image save matsim-<type>-wrapper:latest -o ./image.tar
 ```
 
 # Running image without volumes
