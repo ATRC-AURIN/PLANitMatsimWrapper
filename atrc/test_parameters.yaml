@@ -30,4 +30,7 @@ inputs:
     type: path
     path: /data/outputs                    
 outputs:
+  EVENTS:
+    type: path
+    path: /data/outputs/ITERS/it.2/2.events.xml.gz
   
