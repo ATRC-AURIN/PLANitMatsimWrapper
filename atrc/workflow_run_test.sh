@@ -8,16 +8,16 @@
 docker build -t matsimwrapper-atrc -f atrc/Dockerfile .
 
 # Create folders for data input and output:
-mkdir data
-mkdir data/inputs
-mkdir data/outputs
+mkdir atrc_data
+mkdir atrc_data/inputs
+mkdir atrc_data/outputs
 
 # Copy over test parameters and files:
-cp src/test/resources/Melbourne/* data/inputs/
-cp atrc/test_parameters.yaml data/parameters.yaml
+cp src/test/resources/Melbourne/* atrc_data/inputs/
+cp atrc/test_parameters.yaml atrc_data/parameters.yaml
 
 # Run the container:
 docker run \
-    --mount type=bind,source="$(pwd)"/data,target=/data \
+    --mount type=bind,source="$(pwd)"/atrc_data,target=/atrc_data \
     matsimwrapper-atrc
     
