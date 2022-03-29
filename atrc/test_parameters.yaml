@@ -28,6 +28,6 @@ inputs:
     value: 2                     
 outputs:
   EVENTS:
-    type: path
+    type: gz
     path: /atrc_data/outputs/ITERS/it.2/2.events.xml.gz
   

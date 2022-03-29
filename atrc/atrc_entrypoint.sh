@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# run dos2unix on the parameters script to prevent incorrect if file comes from Windows
+eval "dos2unix /atrc_data/parameters.yaml"
+
 function parse_yaml { 
   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
   sed -ne "s|^\($s\):|\1|" -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 | awk -F$fs '{indent = length($1)/2; vname[indent] = $2; for (i in vname) {if (i > indent) {delete vname[i]}} if (length($3) > 0) {vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")} printf("%s%s=\"%s\"\n", vn, $2, $3);}}'
@@ -19,7 +22,6 @@ ACTIVITY_CONFIG=$inputs_ACTIVITY_CONFIG_path
 LINK_STATS=$inputs_LINK_STATS_value
 ITERATIONS_MAX=$inputs_ITERATIONS_MAX_value
 # Probably want to add some other test cases / other parameters.yamls to fill these out
-
 
 PARAMS=""
 [ ! -z "$MODES" ] && PARAMS="${PARAMS} --modes ${MODES}"
