@@ -25,10 +25,7 @@ inputs:
     value: 1,1
   ITERATIONS_MAX:
     type: value
-    value: 2  
-  OUTPUT:
-    type: path
-    path: /atrc_data/outputs                    
+    value: 2                     
 outputs:
   EVENTS:
     type: path
