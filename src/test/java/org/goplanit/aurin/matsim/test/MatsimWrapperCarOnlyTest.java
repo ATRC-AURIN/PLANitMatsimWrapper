@@ -2,11 +2,12 @@ package org.goplanit.aurin.matsim.test;
 
 import static org.junit.Assert.fail;
 
-import java.io.File;
 import java.net.URL;
+import java.nio.file.Path;
 
 import org.goplanit.aurin.matsim.PlanitAurinMatsimMain;
 import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.goplanit.utils.misc.FileUtils;
 import org.goplanit.utils.misc.UrlUtils;
@@ -27,15 +28,15 @@ public class MatsimWrapperCarOnlyTest {
   private static final URL activity_config = ResourceUtils.getResourceUrl("./Melbourne/activity_config.xml");
   private static final URL EXAMPLE_USER_CONFIG_NO_ACTIVITY_TYPES = ResourceUtils.getResourceUrl("./Melbourne/car_no_activity_types_user_config.xml");;
   
-  private static final File MATSIM_TMP_DIR = new File("./output/car_tmp");
+  private static final Path MATSIM_TMP_DIR = Path.of(".","output","car_tmp");
 
   /**
    * Ensure that generated output files in tmp dir are cleaned up by deleting dirs and content because otherwise
    * we get errors dir could not be created for some reason
    */
-  @AfterClass
-  public static void afterClass(){
-    FileUtils.deleteDirectory(MATSIM_TMP_DIR);
+  @BeforeClass
+  public static void beforeClass(){
+    FileUtils.deleteDirectory(MATSIM_TMP_DIR.toAbsolutePath().toFile());
   }
   
   /**
@@ -87,7 +88,10 @@ public class MatsimWrapperCarOnlyTest {
               "--network_clean",
               "yes",
               "--iterations_max",
-              String.valueOf(iterationsMax)});     
+              String.valueOf(iterationsMax),
+              "--output",
+              MATSIM_TMP_DIR.toAbsolutePath().toString()
+              });     
       
       
     } catch (Exception e) {

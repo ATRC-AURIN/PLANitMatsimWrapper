@@ -117,6 +117,23 @@ public class PlanitAurinMatsimMain {
 
   }
   
+  /** Override the output directory in the configuration
+   * 
+   * @param config to adjust
+   * @param outputDir to set
+   */
+  private static void setMatsimOutputDir(Optional<Config> config, Path outputDir) {
+    if(config.isEmpty()) {
+      LOGGER.warning(String.format("MATSim config not available, unable to set output directory to %s",outputDir.toString()));
+      return;
+    }
+    
+    if(outputDir != null) {
+      config.get().controler().setOutputDirectory(outputDir.toAbsolutePath().toString());
+      LOGGER.warning(String.format("MATSim output directory changed to %s",outputDir.toAbsolutePath().toString()));
+    }   
+  }  
+  
   /** Add modules programmatically in case configuration requires it 
    * 
    * @param controller to override modules on (if any)
@@ -136,9 +153,6 @@ public class PlanitAurinMatsimMain {
    * @param outputDir to use, use default if null
    */  
   private static void runSimulation(final Map<String, String> keyValueMap, Path outputDir) {
-    if(outputDir == null) {
-      outputDir = MatsimHelper.DEFAULT_OUTPUT_PATH;
-    }
     
     /* simulation is using MATSim config files to configure everything or use command line arguments instead */
     Optional<Config> config = null;      
@@ -149,7 +163,11 @@ public class PlanitAurinMatsimMain {
     }else {
         LOGGER.info(String.format("Running MATSim simulation using command line configuration options"));
         config = MatsimHelper.createConfigurationFromCommandLine(keyValueMap);
-    }  
+    }
+    
+    /* explicitly set output dir */
+    setMatsimOutputDir(config, outputDir); 
+    
     config.ifPresentOrElse((theConfig) -> runSimulation(theConfig, keyValueMap), () -> LOGGER.severe("Unable to run MATSim simulation, configuration not available"));    
   }
 
@@ -264,7 +282,8 @@ public class PlanitAurinMatsimMain {
           if(MatsimHelper.isPopulationPlansDownSampled(keyValueMap)) {
             /* any temporary downsampled path should be deleted upon termination of the simulation */
             Files.delete(Path.of(keyValueMap.get(MatsimHelper.PLANS_KEY)));
-          }          
+          }
+          LOGGER.info(String.format("MATSim simulation run ended. Results persisted in %s",outputDir.toAbsolutePath().toString()));
           
         }else {
           LOGGER.warning("--type value %s unknown, unable to proceed");
