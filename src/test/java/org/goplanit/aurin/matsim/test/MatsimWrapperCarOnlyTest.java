@@ -28,7 +28,10 @@ public class MatsimWrapperCarOnlyTest {
   private static final URL activity_config = ResourceUtils.getResourceUrl("./Melbourne/activity_config.xml");
   private static final URL EXAMPLE_USER_CONFIG_NO_ACTIVITY_TYPES = ResourceUtils.getResourceUrl("./Melbourne/car_no_activity_types_user_config.xml");;
   
-  private static final Path MATSIM_TMP_DIR = Path.of(".","output","car_tmp");
+  private static final Path MATSIM_OUTPUT_DIR = Path.of(".","output");
+
+  private static final Path MATSIM_SIM_OUTPUT_DIR = Path.of(MATSIM_OUTPUT_DIR.toString(),"car");
+  private static final Path MATSIM_SIM_CUSTOM_OUTPUT_DIR = Path.of(MATSIM_OUTPUT_DIR.toString(),"car_custom");
 
   /**
    * Ensure that generated output files in tmp dir are cleaned up by deleting dirs and content because otherwise
@@ -36,7 +39,9 @@ public class MatsimWrapperCarOnlyTest {
    */
   @BeforeClass
   public static void beforeClass(){
-    FileUtils.deleteDirectory(MATSIM_TMP_DIR.toAbsolutePath().toFile());
+    FileUtils.deleteDirectory(MATSIM_SIM_OUTPUT_DIR.toAbsolutePath().toFile());
+    FileUtils.deleteDirectory(MATSIM_SIM_CUSTOM_OUTPUT_DIR.toAbsolutePath().toFile());
+    FileUtils.deleteDirectory(MATSIM_OUTPUT_DIR.toAbsolutePath().toFile());
   }
   
   /**
@@ -90,7 +95,7 @@ public class MatsimWrapperCarOnlyTest {
               "--iterations_max",
               String.valueOf(iterationsMax),
               "--output",
-              MATSIM_TMP_DIR.toAbsolutePath().toString()
+              MATSIM_SIM_OUTPUT_DIR.toAbsolutePath().toString()
               });     
       
       
@@ -117,7 +122,9 @@ public class MatsimWrapperCarOnlyTest {
               "--config",
               UrlUtils.asLocalPath(EXAMPLE_USER_CONFIG_NO_ACTIVITY_TYPES).toString(),
               "--override_config",
-              UrlUtils.asLocalPath(activity_config).toString()});     
+              UrlUtils.asLocalPath(activity_config).toString(),
+              "--output",
+              MATSIM_SIM_CUSTOM_OUTPUT_DIR.toAbsolutePath().toString()});
       
       
     } catch (Exception e) {
@@ -145,7 +152,9 @@ public class MatsimWrapperCarOnlyTest {
               "--modes",
               "car_sim",
               "--iterations_max",
-              String.valueOf(iterationsMax)});      
+              String.valueOf(iterationsMax),
+              "--output",
+              MATSIM_OUTPUT_DIR.toAbsolutePath().toString()});
       
     } catch (Exception e) {
       e.printStackTrace();

@@ -16,8 +16,8 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-		<matsim.version>12.0</matsim.version>
-		<planit.version>0.3.0</planit.version>
+		<matsim.version>13.0</matsim.version>
+		<planit.version>0.3.1a1</planit.version>
 		<junit.version>4.13-beta-2</junit.version>
 
 		<!-- Maven plugin properties -->
@@ -141,8 +141,7 @@
 						</goals>
 						<configuration>
 							<!-- place generated javadocs in /docs directory of root -->
-							<reportOutputDirectory>${basedir}</reportOutputDirectory>
-							<destDir>docs</destDir>
+							<destDir>${basedir}/docs</destDir>
 							<!-- switch on dependency-driven aggregation -->
 							<includeDependencySources>true</includeDependencySources>
 							<dependencySourceIncludes>

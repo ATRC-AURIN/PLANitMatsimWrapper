@@ -713,10 +713,10 @@ public class MatsimHelper {
     
     try {
       double downSamplingFactor = Double.parseDouble(downSampleValueString);
-      if(Precision.isGreater(downSamplingFactor,1)) {
+      if(Precision.greater(downSamplingFactor,1)) {
         LOGGER.warning("IGNORED: Plans down sampling percentage is larger than 1, should be between 0 and 1");  
       }
-      return Precision.isSmaller(downSamplingFactor,1,Precision.EPSILON_3);
+      return Precision.smaller(downSamplingFactor,1,Precision.EPSILON_3);
     }catch(Exception e) {
       LOGGER.warning("IGNORED: Plans down sampling percentage is not a valid floating point value");
       return false;
