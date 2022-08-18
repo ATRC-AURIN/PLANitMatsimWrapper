@@ -1,5 +1,8 @@
 # PLANitOsmMatsimWrapper
 
+![Master Branch](https://github.com/AURIN-OFFICE/PLANitMatsimWrapper/actions/workflows/maven_master.yml/badge.svg?branch=master)
+![Develop Branch](https://github.com/AURIN-OFFICE/PLANitMatsimWrapper/actions/workflows/maven_develop.yml/badge.svg?branch=develop)
+
 Wrapper for Aurin services to access exposed functionality of PLANit MATSim simulations.
 
 The purpose of this wrapper is twofold:
