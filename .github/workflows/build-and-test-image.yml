@@ -1,0 +1,28 @@
+name: Build the image and run the bash test script.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run workflow
+        run: atrc/workflow_run_test.sh
+
+      - name: List files
+        run: cd atrc_data/outputs && ls -lha
+
+      - name: Save test outputs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-outputs
+          path: atrc_data/outputs/*
