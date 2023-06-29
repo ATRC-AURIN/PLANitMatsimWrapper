@@ -18,7 +18,7 @@
 
 		<matsim.version>13.0</matsim.version>
 		<planit.version>0.3.1a1</planit.version>
-		<junit.version>4.13-beta-2</junit.version>
+		<junit.version>4.13.2</junit.version>
 
 		<!-- Maven plugin properties -->
 		<maven.compiler.java.version>11</maven.compiler.java.version>

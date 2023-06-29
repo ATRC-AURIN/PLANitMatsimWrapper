@@ -556,7 +556,7 @@ public class MatsimHelper {
         ptModeRoutingParams.setTeleportedModeFreespeedFactor(null); // must be removed otherwise we can't set speed     
         ptModeRoutingParams.setTeleportedModeSpeed(freeSpeedToUse); //meter per second
         LOGGER.warning(String.format("MATSim teleported mode free speed (car reference speed estimate / free speed factor) set to %.2f / %.2f  = %.2f m/s",carMaxSpeedEstimate, configuredFactor,freeSpeedToUse));        
-      } catch (PlanItException e) {
+      } catch (Exception e) {
         LOGGER.severe(e.getMessage());
         LOGGER.severe("Unable to convert speed from km/h to m/s");
       }      
